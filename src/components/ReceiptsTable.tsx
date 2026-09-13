@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { EXPENSE_CATEGORIES, getSubcategory } from "@/lib/expenseCategories";
 import { getReliefCategory } from "@/lib/reliefCategories";
+import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import ReceiptImageModal from "./ReceiptImageModal";
 import type { Receipt } from "@/lib/types";
 
@@ -24,6 +25,12 @@ export default function ReceiptsTable({
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
+
+  const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
+  const sortedReceipts = useMemo(
+    () => [...receipts].sort((a, b) => b.date.localeCompare(a.date)),
+    [receipts]
+  );
 
   async function handleDelete(id: string) {
     setPendingId(id);
@@ -85,11 +92,28 @@ export default function ReceiptsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-surface">
-            {receipts.map((r) => {
+            {sortedReceipts.map((r, i) => {
               const sub = getSubcategory(r.subcategory);
               const relief = r.reliefCategory ? getReliefCategory(r.reliefCategory) : null;
+              const monthKey = r.date.slice(0, 7);
+              const prevMonthKey = i > 0 ? sortedReceipts[i - 1].date.slice(0, 7) : null;
+              const showDivider = monthKey !== prevMonthKey;
+              const monthIndex = Number(r.date.slice(5, 7)) - 1;
+              const monthLabel = `${monthNames[monthIndex] ?? ""} ${r.date.slice(0, 4)}`;
+
               return (
-                <tr key={r.id} className="hover:bg-surface-2/60">
+                <React.Fragment key={r.id}>
+                  {showDivider && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="bg-surface-2/80 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted"
+                      >
+                        {monthLabel}
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="hover:bg-surface-2/60">
                   <td className="px-4 py-3">
                     {r.imageKey ? (
                       <button
@@ -242,7 +266,8 @@ export default function ReceiptsTable({
                       </button>
                     </div>
                   </td>
-                </tr>
+                  </tr>
+                </React.Fragment>
               );
             })}
           </tbody>

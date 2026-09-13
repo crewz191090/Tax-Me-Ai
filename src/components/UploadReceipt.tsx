@@ -77,6 +77,9 @@ export default function UploadReceipt({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [source, setSource] = useState<Source>(null);
   const [showMore, setShowMore] = useState(false);
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splitTotal, setSplitTotal] = useState("");
+  const [splitPeople, setSplitPeople] = useState("2");
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
@@ -260,8 +263,14 @@ export default function UploadReceipt({
     setDraft(null);
     setSource(null);
     setShowMore(false);
+    setSplitEnabled(false);
+    setSplitTotal("");
+    setSplitPeople("2");
     if (inputRef.current) inputRef.current.value = "";
   }
+
+  const splitShare =
+    splitTotal && Number(splitPeople) > 0 ? Number(splitTotal) / Number(splitPeople) : 0;
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-6">
@@ -448,6 +457,7 @@ export default function UploadReceipt({
                   onChange={(e) =>
                     setDraft({ ...draft, amount: parseFloat(e.target.value) || 0 })
                   }
+                  onFocus={(e) => e.target.select()}
                   className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
                 />
               </label>
@@ -617,6 +627,62 @@ export default function UploadReceipt({
                     ))}
                   </select>
                 </label>
+
+                <div className="rounded-lg border border-border bg-surface p-3">
+                  <label className="flex items-center gap-2 text-xs text-muted">
+                    <input
+                      type="checkbox"
+                      checked={splitEnabled}
+                      onChange={(e) => setSplitEnabled(e.target.checked)}
+                      className="h-4 w-4 rounded border-border accent-cyan-400"
+                    />
+                    {t("upload.splitEnable")}
+                  </label>
+
+                  {splitEnabled && (
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <label className="text-xs text-muted">
+                        {t("upload.splitTotal")}
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={splitTotal}
+                          onChange={(e) => setSplitTotal(e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                        />
+                      </label>
+                      <label className="text-xs text-muted">
+                        {t("upload.splitPeople")}
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={splitPeople}
+                          onChange={(e) => setSplitPeople(e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                        />
+                      </label>
+
+                      <div className="col-span-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm">
+                        <span className="text-muted">{t("upload.splitShare")}</span>
+                        <span className="font-semibold text-accent">RM {splitShare.toFixed(2)}</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft({ ...draft, amount: Math.round(splitShare * 100) / 100 })
+                        }
+                        disabled={splitShare <= 0}
+                        className="btn-pill btn-pill-outline btn-pill-sm col-span-2"
+                      >
+                        {t("upload.splitUse")}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

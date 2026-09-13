@@ -218,12 +218,7 @@ export default function DashboardPage() {
                 <ExpensesOverview receipts={receipts} />
               </div>
               <div className="mb-6">
-                <CashFlowSummary
-                  receipts={receipts}
-                  incomeEntries={incomeEntries}
-                  year={year}
-                  month={null}
-                />
+                <CashFlowSummary receipts={receipts} incomeEntries={incomeEntries} />
               </div>
               <div className="mb-6">
                 <BudgetTracker

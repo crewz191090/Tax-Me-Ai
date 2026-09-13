@@ -12,7 +12,9 @@ export default function SummaryBar({
   year: number;
 }) {
   const { t } = useLanguage();
-  const total = receipts.reduce((sum, r) => sum + r.amount, 0);
+  const total = receipts
+    .filter((r) => r.type === "expense")
+    .reduce((sum, r) => sum + r.amount, 0);
   const summary = computeReliefSummary(receipts, year);
 
   return (
