@@ -55,8 +55,20 @@ const STEP1_SCHEMA: ObjectSchema = {
       description:
         "True only if this looks like a Malaysian LHDN MyInvois e-invoice (has a validation/QR reference or explicit e-invoice marking).",
     },
+    documentType: {
+      type: SchemaType.STRING,
+      format: "enum",
+      enum: ["receipt", "bank_transaction", "unrelated"],
+      description:
+        'Classify the image itself: "receipt" for a purchase receipt/invoice, "bank_transaction" for a bank transfer/payment confirmation screenshot (online banking, e-wallet, ATM slip), or "unrelated" if the image is not a receipt or bank transaction at all (e.g. a random photo, selfie, document unrelated to a transaction, blank/unreadable image).',
+    },
+    transactionNumber: {
+      type: SchemaType.STRING,
+      description:
+        'Only when documentType is "bank_transaction": the transaction/reference number shown on the screenshot (e.g. "TXN123456789", reference no., or transfer ID). Empty string if not applicable or not visible.',
+    },
   },
-  required: ["merchant", "date", "amount", "mainCategory", "reliefCategoryOrNone"],
+  required: ["merchant", "date", "amount", "mainCategory", "reliefCategoryOrNone", "documentType"],
 };
 
 function subcategorySchema(subcategoryIds: string[]): ObjectSchema {
@@ -104,7 +116,7 @@ export async function extractReceiptFromImage(params: {
       },
     },
     {
-      text: `You are reading a Malaysian receipt or invoice for a personal expense tracker. Extract the merchant name, transaction date, and total amount. The date must come only from what is printed on the receipt itself (e.g. a date/time line, transaction timestamp, or invoice date) — if no date is legible anywhere on the receipt, return an empty string for date rather than guessing a year. Classify the expense into the single best-matching general category id from this list:\n\n${MAIN_CATEGORY_GUIDE}\n\nSeparately, check whether this expense also qualifies for a specific LHDN individual income tax relief category. If it clearly matches one of these, return its id; otherwise return "none":\n\n${RELIEF_GUIDE}\n\nIf it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
+      text: `You are reading an image uploaded to a personal expense tracker. First, determine what kind of document this actually is (documentType): a purchase "receipt"/invoice, a "bank_transaction" screenshot (bank transfer, e-wallet payment, ATM slip), or "unrelated" if it is not a receipt or bank transaction at all — in that case still fill the other fields with your best guess, but documentType is what matters.\n\nIf it is a receipt or bank transaction, extract the merchant name (or bank/payee name for a bank transaction), transaction date, and total amount. The date must come only from what is printed on the image itself (e.g. a date/time line, transaction timestamp, or invoice date) — if no date is legible, return an empty string for date rather than guessing a year. If it's a bank_transaction, also extract the transaction/reference number shown, if any.\n\nClassify the expense into the single best-matching general category id from this list:\n\n${MAIN_CATEGORY_GUIDE}\n\nSeparately, check whether this expense also qualifies for a specific LHDN individual income tax relief category. If it clearly matches one of these, return its id; otherwise return "none":\n\n${RELIEF_GUIDE}\n\nIf it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
     },
   ]);
 
@@ -116,7 +128,17 @@ export async function extractReceiptFromImage(params: {
     mainCategory: string;
     reliefCategoryOrNone: string;
     isEInvoice?: boolean;
+    documentType?: string;
+    transactionNumber?: string;
   };
+
+  if (step1.documentType === "unrelated") {
+    const err = new Error(
+      "This image doesn't look like a receipt or bank transaction. Please upload a valid receipt or bank transfer screenshot."
+    );
+    (err as Error & { code?: string }).code = "UNRELATED_IMAGE";
+    throw err;
+  }
 
   const mainCategoryId = MAIN_CATEGORY_IDS.includes(step1.mainCategory)
     ? step1.mainCategory
@@ -143,8 +165,14 @@ export async function extractReceiptFromImage(params: {
     }
   }
 
+  const baseName = step1.merchant || "Unknown merchant";
+  const merchant =
+    step1.documentType === "bank_transaction" && step1.transactionNumber
+      ? `${baseName} (${step1.transactionNumber})`
+      : baseName;
+
   return {
-    merchant: step1.merchant || "Unknown merchant",
+    merchant,
     date: step1.date || new Date().toISOString().slice(0, 10),
     amount: typeof step1.amount === "number" ? step1.amount : 0,
     subcategory,

@@ -77,6 +77,7 @@ export default function UploadReceipt({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [source, setSource] = useState<Source>(null);
   const [showMore, setShowMore] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [splitEnabled, setSplitEnabled] = useState(false);
   const [splitTotal, setSplitTotal] = useState("");
   const [splitPeople, setSplitPeople] = useState("2");
@@ -103,7 +104,21 @@ export default function UploadReceipt({
         formData.append("file", selectedFile);
 
         const res = await fetch("/api/scan", { method: "POST", body: formData });
-        const json = (await res.json()) as { extracted?: ExtractedReceipt; error?: string };
+        const json = (await res.json()) as {
+          extracted?: ExtractedReceipt;
+          error?: string;
+          unrelated?: boolean;
+        };
+
+        if (json.unrelated) {
+          // The AI positively identified this as not a receipt or bank
+          // transaction — that's a real rejection, not an AI-service
+          // failure, so surface it directly instead of falling back to
+          // local OCR (which has no way to make the same judgment).
+          setError(json.error || t("upload.notReceiptError"));
+          setStatus("error");
+          return;
+        }
 
         if (!res.ok || !json.extracted) {
           throw new Error(json.error || "AI scan failed");
@@ -134,11 +149,10 @@ export default function UploadReceipt({
     if (selected) handleFile(selected);
   }
 
-  async function handleManualFile(selectedFile: File) {
+  async function startManualEntry(selectedFile: File | null) {
     setError(null);
     setFile(selectedFile);
-    const dataUrl = await fileToDataUrl(selectedFile);
-    setPreview(dataUrl);
+    setPreview(selectedFile ? await fileToDataUrl(selectedFile) : null);
     setDraft({
       merchant: "",
       date: new Date().toISOString().slice(0, 10),
@@ -160,7 +174,7 @@ export default function UploadReceipt({
 
   function onManualInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
-    if (selected) handleManualFile(selected);
+    if (selected) startManualEntry(selected);
   }
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -218,8 +232,22 @@ export default function UploadReceipt({
     }
   }
 
+  function validateDraft(d: Draft): string | null {
+    if (!d.merchant.trim()) return t("upload.errorMerchant");
+    if (!d.date) return t("upload.errorDate");
+    if (!d.amount || d.amount <= 0) return t("upload.errorAmount");
+    return null;
+  }
+
   async function handleSave() {
     if (!draft) return;
+
+    const validation = validateDraft(draft);
+    if (validation) {
+      setValidationError(validation);
+      return;
+    }
+    setValidationError(null);
     setStatus("saving");
     setError(null);
 
@@ -263,6 +291,7 @@ export default function UploadReceipt({
     setDraft(null);
     setSource(null);
     setShowMore(false);
+    setValidationError(null);
     setSplitEnabled(false);
     setSplitTotal("");
     setSplitPeople("2");
@@ -372,6 +401,13 @@ export default function UploadReceipt({
                 className="btn-pill btn-pill-outline btn-pill-sm"
               >
                 📷 {t("upload.takePhoto")}
+              </button>
+              <button
+                type="button"
+                onClick={() => startManualEntry(null)}
+                className="btn-pill btn-pill-ghost btn-pill-sm"
+              >
+                {t("upload.noImage")}
               </button>
             </div>
             <p className="max-w-sm text-xs text-muted">{t("upload.manualHint")}</p>
@@ -687,6 +723,12 @@ export default function UploadReceipt({
                   </select>
                 </label>
               </div>
+            )}
+
+            {validationError && (
+              <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {validationError}
+              </p>
             )}
 
             <div className="mt-2 flex gap-3">

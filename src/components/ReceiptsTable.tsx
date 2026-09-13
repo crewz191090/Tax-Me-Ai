@@ -128,8 +128,12 @@ export default function ReceiptsTable({
                         />
                       </button>
                     ) : (
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-xs text-muted">
-                        —
+                      <span
+                        className="flex h-12 w-20 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-border bg-surface-2 px-1 py-1 text-center leading-tight text-muted"
+                        title={t("table.noImage")}
+                      >
+                        <span className="text-sm">🖼️</span>
+                        <span className="text-[7px] font-medium">{t("table.noImage")}</span>
                       </span>
                     )}
                   </td>

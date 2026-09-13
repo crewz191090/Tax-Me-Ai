@@ -43,6 +43,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ extracted });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    const code = err instanceof Error ? (err as Error & { code?: string }).code : undefined;
+
+    if (code === "UNRELATED_IMAGE") {
+      return NextResponse.json({ error: message, unrelated: true }, { status: 422 });
+    }
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
