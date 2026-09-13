@@ -51,20 +51,16 @@ export default function CashFlowSummary({
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">{t("cashflow.title")}</h2>
-        <div className="flex items-center gap-1 rounded-full border border-border bg-surface-2 p-1 text-xs">
+        <div className="glass-segment text-xs">
           <button
             onClick={() => setView("month")}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              view === "month" ? "bg-accent text-black" : "text-muted hover:text-foreground"
-            }`}
+            className={`glass-segment-btn ${view === "month" ? "glass-segment-btn-active" : ""}`}
           >
             {t("expenses.viewMonth")}
           </button>
           <button
             onClick={() => setView("year")}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              view === "year" ? "bg-accent text-black" : "text-muted hover:text-foreground"
-            }`}
+            className={`glass-segment-btn ${view === "year" ? "glass-segment-btn-active" : ""}`}
           >
             {t("expenses.viewYear")}
           </button>

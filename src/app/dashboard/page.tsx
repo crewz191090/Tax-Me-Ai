@@ -180,20 +180,16 @@ export default function DashboardPage() {
 
           {loaded && (
             <>
-              <div className="mb-6 flex items-center gap-1 rounded-full border border-border bg-surface-2 p-1 text-sm w-fit">
+              <div className="glass-segment mb-6 w-fit text-sm">
                 <button
                   onClick={() => setTab("expenses")}
-                  className={`rounded-full px-4 py-1.5 transition-colors ${
-                    tab === "expenses" ? "bg-accent text-black" : "text-muted hover:text-foreground"
-                  }`}
+                  className={`glass-segment-btn ${tab === "expenses" ? "glass-segment-btn-active" : ""}`}
                 >
                   {t("dashboard.tabExpenses")}
                 </button>
                 <button
                   onClick={() => setTab("tax")}
-                  className={`rounded-full px-4 py-1.5 transition-colors ${
-                    tab === "tax" ? "bg-accent text-black" : "text-muted hover:text-foreground"
-                  }`}
+                  className={`glass-segment-btn ${tab === "tax" ? "glass-segment-btn-active" : ""}`}
                 >
                   {t("dashboard.tabTax")}
                 </button>

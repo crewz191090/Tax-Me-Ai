@@ -10,8 +10,8 @@ export default function Header() {
   const { user, loading, logout } = useAuth();
 
   return (
-    <header className="glass sticky top-0 z-50 border-b border-border/60">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+    <header className="sticky top-3 z-50 px-3 sm:px-6">
+      <div className="glass-nav mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 rounded-3xl px-4 py-3 sm:px-6 sm:py-4">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/logo.png"
@@ -32,15 +32,13 @@ export default function Header() {
             </Link>
           )}
 
-          <div className="flex items-center gap-1 rounded-full border border-border bg-surface p-1 text-xs">
+          <div className="glass-segment text-xs">
             {(["en", "bm"] as const).map((option) => (
               <button
                 key={option}
                 onClick={() => setLang(option)}
-                className={`rounded-full px-2.5 py-1 uppercase transition-colors ${
-                  lang === option
-                    ? "bg-surface-2 text-foreground"
-                    : "text-muted hover:text-foreground"
+                className={`glass-segment-btn uppercase ${
+                  lang === option ? "glass-segment-btn-active" : ""
                 }`}
               >
                 {option}
