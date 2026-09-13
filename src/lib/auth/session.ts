@@ -69,3 +69,8 @@ export async function deleteCurrentSession(): Promise<void> {
   const env = await getCfEnv();
   await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
 }
+
+export async function deleteAllSessionsForUser(userId: string): Promise<void> {
+  const env = await getCfEnv();
+  await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId).run();
+}

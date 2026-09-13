@@ -100,6 +100,15 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
             )}
           </label>
 
+          {isLogin && (
+            <Link
+              href="/forgot-password"
+              className="-mt-2 self-end text-xs text-muted hover:text-accent"
+            >
+              {t("auth.login.forgotLink")}
+            </Link>
+          )}
+
           {error && (
             <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
               {error}

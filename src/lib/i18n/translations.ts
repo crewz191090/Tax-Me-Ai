@@ -22,6 +22,25 @@ export const translations = {
     "auth.email": "Email",
     "auth.password": "Password",
     "auth.passwordHint": "At least 8 characters",
+    "auth.login.forgotLink": "Forgot password?",
+
+    "auth.forgot.title": "Reset your password",
+    "auth.forgot.subtitle":
+      "Enter your email and we'll send you a link to reset your password.",
+    "auth.forgot.cta": "Send reset link",
+    "auth.forgot.loading": "Sending…",
+    "auth.forgot.success":
+      "If an account exists for that email, a reset link has been sent. Check your inbox.",
+    "auth.forgot.backToLogin": "Back to log in",
+
+    "auth.reset.title": "Choose a new password",
+    "auth.reset.subtitle": "This link is valid for 1 hour.",
+    "auth.reset.newPassword": "New password",
+    "auth.reset.cta": "Reset password",
+    "auth.reset.loading": "Resetting…",
+    "auth.reset.success": "Your password has been reset. You can now log in.",
+    "auth.reset.goToLogin": "Go to log in",
+    "auth.reset.missingToken": "This reset link is missing or invalid.",
 
     "hero.badge": "Personal tax relief tracker for Malaysia",
     "hero.title1": "Every receipt.",
@@ -147,6 +166,25 @@ export const translations = {
     "auth.email": "Emel",
     "auth.password": "Kata laluan",
     "auth.passwordHint": "Sekurang-kurangnya 8 aksara",
+    "auth.login.forgotLink": "Lupa kata laluan?",
+
+    "auth.forgot.title": "Set semula kata laluan",
+    "auth.forgot.subtitle":
+      "Masukkan emel anda dan kami akan hantar pautan untuk set semula kata laluan.",
+    "auth.forgot.cta": "Hantar pautan reset",
+    "auth.forgot.loading": "Sedang menghantar…",
+    "auth.forgot.success":
+      "Jika akaun wujud untuk emel tersebut, pautan reset telah dihantar. Semak peti masuk anda.",
+    "auth.forgot.backToLogin": "Kembali ke log masuk",
+
+    "auth.reset.title": "Pilih kata laluan baharu",
+    "auth.reset.subtitle": "Pautan ini sah selama 1 jam.",
+    "auth.reset.newPassword": "Kata laluan baharu",
+    "auth.reset.cta": "Set semula kata laluan",
+    "auth.reset.loading": "Sedang set semula…",
+    "auth.reset.success": "Kata laluan anda telah di-set semula. Anda kini boleh log masuk.",
+    "auth.reset.goToLogin": "Ke halaman log masuk",
+    "auth.reset.missingToken": "Pautan reset ini tiada atau tidak sah.",
 
     "hero.badge": "Penjejak pelepasan cukai peribadi untuk Malaysia",
     "hero.title1": "Setiap resit.",

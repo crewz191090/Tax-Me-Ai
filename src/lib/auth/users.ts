@@ -15,6 +15,21 @@ export async function findUserByEmail(email: string): Promise<UserRow | null> {
   return row ?? null;
 }
 
+export async function findUserById(id: string): Promise<UserRow | null> {
+  const env = await getCfEnv();
+  const row = await env.DB.prepare("SELECT * FROM users WHERE id = ?")
+    .bind(id)
+    .first<UserRow>();
+  return row ?? null;
+}
+
+export async function updateUserPassword(userId: string, passwordHash: string): Promise<void> {
+  const env = await getCfEnv();
+  await env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+    .bind(passwordHash, userId)
+    .run();
+}
+
 export async function createUser(email: string, passwordHash: string): Promise<UserRow> {
   const env = await getCfEnv();
   const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
