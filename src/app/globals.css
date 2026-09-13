@@ -40,37 +40,111 @@ body {
   color: var(--foreground);
 }
 
-/* Soft blurred color blobs that slowly drift — replaces the old fine
-   grid-line backdrop with a calmer "floating gradient orb" look. */
-.bg-orbs {
-  background-image:
-    radial-gradient(45% 45% at 50% 50%, rgba(34, 211, 238, 0.22) 0%, transparent 70%),
-    radial-gradient(40% 40% at 50% 50%, rgba(99, 102, 241, 0.2) 0%, transparent 70%),
-    radial-gradient(38% 38% at 50% 50%, rgba(168, 85, 247, 0.16) 0%, transparent 70%);
-  background-repeat: no-repeat;
-  background-size:
-    60% 60%,
-    55% 55%,
-    50% 50%;
-  background-position:
-    10% 18%,
-    85% 12%,
-    52% 88%;
-  animation: orb-float 26s ease-in-out infinite alternate;
+/* Round, blurred orbs that drift around their container and bounce
+   off its edges, like a slow screensaver — replaces the old fine
+   grid-line backdrop. Rendered by <FloatingOrbs />; the container just
+   needs `relative overflow-hidden` so the orbs clip at its bounds. */
+.floating-orbs {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-@keyframes orb-float {
+.floating-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(50px);
+}
+
+.floating-orb-1 {
+  width: 32vmin;
+  height: 32vmin;
+  background: rgba(34, 211, 238, 0.32);
+  animation: orb-bounce-a 34s linear infinite;
+}
+
+.floating-orb-2 {
+  width: 28vmin;
+  height: 28vmin;
+  background: rgba(99, 102, 241, 0.3);
+  animation: orb-bounce-b 42s linear infinite;
+}
+
+.floating-orb-3 {
+  width: 24vmin;
+  height: 24vmin;
+  background: rgba(168, 85, 247, 0.26);
+  animation: orb-bounce-c 38s linear infinite;
+}
+
+@keyframes orb-bounce-a {
   0% {
-    background-position:
-      10% 18%,
-      85% 12%,
-      52% 88%;
+    top: 5%;
+    left: 8%;
+  }
+  25% {
+    top: 62%;
+    left: 72%;
+  }
+  50% {
+    top: 12%;
+    left: 80%;
+  }
+  75% {
+    top: 68%;
+    left: 15%;
   }
   100% {
-    background-position:
-      17% 26%,
-      77% 20%,
-      45% 80%;
+    top: 5%;
+    left: 8%;
+  }
+}
+
+@keyframes orb-bounce-b {
+  0% {
+    top: 58%;
+    left: 75%;
+  }
+  25% {
+    top: 8%;
+    left: 12%;
+  }
+  50% {
+    top: 72%;
+    left: 32%;
+  }
+  75% {
+    top: 18%;
+    left: 62%;
+  }
+  100% {
+    top: 58%;
+    left: 75%;
+  }
+}
+
+@keyframes orb-bounce-c {
+  0% {
+    top: 30%;
+    left: 42%;
+  }
+  25% {
+    top: 78%;
+    left: 60%;
+  }
+  50% {
+    top: 10%;
+    left: 72%;
+  }
+  75% {
+    top: 52%;
+    left: 6%;
+  }
+  100% {
+    top: 30%;
+    left: 42%;
   }
 }
 
