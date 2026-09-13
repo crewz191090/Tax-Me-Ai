@@ -1,10 +1,16 @@
 # Tax Me AI
 
-Malaysian receipt & tax tracker. Snap or upload a receipt, AI extracts the
-merchant/amount/date/category, and simplified LHDN-style deductibility rules
-are applied automatically.
+Malaysian personal tax relief tracker. Snap or upload a receipt, AI matches
+it to one of LHDN's official individual tax relief categories (YA2025), and
+tracks how much of each category's annual cap you've used. Bilingual (EN/BM).
 
 **Live:** https://tax-me-ai.pelaporan-manpower-fms.workers.dev
+
+Relief categories, caps, and descriptions live in
+[`src/lib/reliefCategories.ts`](src/lib/reliefCategories.ts), sourced from
+LHDN's "Pelepasan Cukai Individu Pemastautin" YA2025 brochure. This is a
+simplified summary for personal planning only — always verify with LHDN or
+a licensed tax agent before filing.
 
 ## Stack
 
@@ -66,10 +72,13 @@ npx wrangler secret put GEMINI_API_KEY
 - `src/app/api/scan` — Gemini vision extraction endpoint
 - `src/app/api/receipts` — D1-backed CRUD for receipts
 - `src/app/api/receipts/[id]/image` — serves receipt images from R2
-- `src/lib/` — D1, R2, Gemini, and deductibility-rule helpers
+- `src/lib/reliefCategories.ts` — the 16 LHDN relief categories and caps
+- `src/lib/reliefCalc.ts` — per-category, per-year relief summary math
+- `src/lib/i18n/` — EN/BM language context and dictionary
+- `src/lib/` — D1, R2, and Gemini helpers
 
 ## Disclaimer
 
 Tax Me AI is an independent tool, not affiliated with or endorsed by
-LHDN / IRBM. Deductibility results are AI-generated estimates — always
+LHDN / IRBM. Relief category matches are AI-generated estimates — always
 verify with a qualified tax agent before filing.
