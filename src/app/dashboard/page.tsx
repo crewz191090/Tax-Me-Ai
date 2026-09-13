@@ -176,6 +176,7 @@ export default function DashboardPage() {
               <div className="mb-6">
                 <AiInsights
                   receipts={receipts}
+                  incomeEntries={incomeEntries}
                   period={{ type: "year", year }}
                   periodLabel={String(year)}
                 />

@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { computeCategoryBreakdown, type Period } from "@/lib/reliefCalc";
-import type { Receipt } from "@/lib/types";
+import type { IncomeEntry, Receipt } from "@/lib/types";
 
 export default function AiInsights({
   receipts,
+  incomeEntries,
   period,
   periodLabel,
 }: {
   receipts: Receipt[];
+  incomeEntries: IncomeEntry[];
   period: Period;
   periodLabel: string;
 }) {
@@ -27,9 +29,16 @@ export default function AiInsights({
     try {
       const breakdown = computeCategoryBreakdown(receipts, period);
       const totalSpent = breakdown.reduce((sum, r) => sum + r.amount, 0);
-      const totalIncome = receipts
+      const receiptIncome = receipts
         .filter((r) => r.type === "income")
         .reduce((sum, r) => sum + r.amount, 0);
+      const monthlyIncome = incomeEntries
+        .filter((e) => {
+          if (period.type === "year") return e.year === period.year;
+          return e.year === period.year && e.month === period.month;
+        })
+        .reduce((sum, e) => sum + e.amount, 0);
+      const totalIncome = receiptIncome + monthlyIncome;
 
       const res = await fetch("/api/insights", {
         method: "POST",

@@ -184,10 +184,10 @@ export async function generateSpendingInsight(params: {
 
 Total spent: RM ${params.totalSpent.toFixed(2)}
 Total income: RM ${params.totalIncome.toFixed(2)}
-By category:
+By category (this list is complete — every category the user spent in during this period, already summing every transaction including manually-entered ones):
 ${breakdownText || "(no expenses recorded)"}
 
-Write 2-3 short, specific sentences of friendly insight: point out their biggest spending category with its RM amount and rough percentage of total, note their cash flow (income vs expense, positive or negative), and give one concrete, practical tip relevant to their top category. Do not use markdown formatting, headings, or bullet points — plain conversational sentences only. ${languageInstruction}`;
+Write 2-4 short, specific sentences of friendly insight: mention the total spent, name their biggest spending category with its RM amount and rough percentage of total, and if there is a second category also mention it briefly by name and amount so the total is clearly accounted for (skip this if there's only one category). Note their cash flow (income vs expense, positive or negative), and give one concrete, practical tip relevant to their top category. Do not use markdown formatting, headings, or bullet points — plain conversational sentences only. ${languageInstruction}`;
 
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
