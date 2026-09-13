@@ -57,6 +57,9 @@ export const translations = {
     "relief.title": "Based on LHDN's official YA{year} relief list",
     "relief.gaugeLabel": "of total relief cap used",
     "relief.remaining": "Remaining",
+    "relief.allYear": "All year",
+    "relief.capLabel": "Cap",
+    "relief.usage": "Usage",
     "relief.alertFull": "Fully claimed:",
     "relief.alertWarning": "{pct}% used —",
     "relief.subtitle":
@@ -317,6 +320,9 @@ export const translations = {
     "relief.title": "Berdasarkan senarai pelepasan rasmi LHDN YA{year}",
     "relief.gaugeLabel": "daripada jumlah had pelepasan digunakan",
     "relief.remaining": "Baki",
+    "relief.allYear": "Sepanjang tahun",
+    "relief.capLabel": "Had",
+    "relief.usage": "Penggunaan",
     "relief.alertFull": "Telah dituntut penuh:",
     "relief.alertWarning": "{pct}% digunakan —",
     "relief.subtitle":

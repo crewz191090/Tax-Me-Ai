@@ -57,7 +57,8 @@ export function yearsWithReceipts(receipts: Receipt[]): number[] {
 
 export function computeReliefSummary(
   receipts: Receipt[],
-  year: number
+  year: number,
+  month?: number | null
 ): ReliefSummary {
   const spentByCategory = new Map<string, number>();
 
@@ -65,6 +66,10 @@ export function computeReliefSummary(
     if (!receipt.reliefCategory) continue;
     const receiptYear = Number(receipt.date.slice(0, 4));
     if (receiptYear !== year) continue;
+    if (month != null) {
+      const receiptMonth = Number(receipt.date.slice(5, 7));
+      if (receiptMonth !== month) continue;
+    }
     const current = spentByCategory.get(receipt.reliefCategory) ?? 0;
     spentByCategory.set(receipt.reliefCategory, current + receipt.amount);
   }
