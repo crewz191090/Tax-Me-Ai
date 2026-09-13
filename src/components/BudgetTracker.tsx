@@ -1,18 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { INCOME_TYPES, getIncomeType } from "@/lib/incomeTypes";
-import type { Receipt } from "@/lib/types";
-
-interface IncomeEntry {
-  id: string;
-  year: number;
-  month: number;
-  amount: number;
-  incomeType: string;
-  label: string | null;
-}
+import type { IncomeEntry, Receipt } from "@/lib/types";
 
 function barColor(pct: number) {
   if (pct >= 100) return "bg-red-400";
@@ -28,10 +19,16 @@ interface EntryForm {
 
 const EMPTY_FORM: EntryForm = { amount: "", incomeType: INCOME_TYPES[0].id, label: "" };
 
-export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
+export default function BudgetTracker({
+  receipts,
+  entries,
+  onEntriesChange,
+}: {
+  receipts: Receipt[];
+  entries: IncomeEntry[];
+  onEntriesChange: (entries: IncomeEntry[]) => void;
+}) {
   const { lang, t } = useLanguage();
-  const [entries, setEntries] = useState<IncomeEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<EntryForm>(EMPTY_FORM);
@@ -40,16 +37,10 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const loadEntries = useCallback(() => {
-    fetch(`/api/income?year=${currentYear}&month=${currentMonth}`)
-      .then((res) => res.json() as Promise<{ entries?: IncomeEntry[] }>)
-      .then((json) => setEntries(json.entries ?? []))
-      .finally(() => setLoaded(true));
-  }, [currentYear, currentMonth]);
-
-  useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
+  const monthEntries = useMemo(
+    () => entries.filter((e) => e.year === currentYear && e.month === currentMonth),
+    [entries, currentYear, currentMonth]
+  );
 
   const spentThisMonth = useMemo(() => {
     let total = 0;
@@ -63,7 +54,7 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
     return total;
   }, [receipts, currentYear, currentMonth]);
 
-  const totalIncome = entries.reduce((sum, e) => sum + e.amount, 0);
+  const totalIncome = monthEntries.reduce((sum, e) => sum + e.amount, 0);
 
   function startAdd() {
     setForm(EMPTY_FORM);
@@ -95,8 +86,8 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
         body: JSON.stringify({ amount, incomeType: form.incomeType, label }),
       });
       if (!res.ok) return;
-      setEntries((prev) =>
-        prev.map((e) => (e.id === editingId ? { ...e, amount, incomeType: form.incomeType, label } : e))
+      onEntriesChange(
+        entries.map((e) => (e.id === editingId ? { ...e, amount, incomeType: form.incomeType, label } : e))
       );
     } else {
       const res = await fetch("/api/income", {
@@ -112,8 +103,8 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
       });
       if (!res.ok) return;
       const json = (await res.json()) as { id: string };
-      setEntries((prev) => [
-        ...prev,
+      onEntriesChange([
+        ...entries,
         { id: json.id, year: currentYear, month: currentMonth, amount, incomeType: form.incomeType, label },
       ]);
     }
@@ -123,11 +114,9 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
 
   async function handleRemove(id: string) {
     await fetch(`/api/income/${id}`, { method: "DELETE" });
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    onEntriesChange(entries.filter((e) => e.id !== id));
     if (editingId === id) cancelForm();
   }
-
-  if (!loaded) return null;
 
   const remaining = totalIncome - spentThisMonth;
   const pct = totalIncome > 0 ? Math.min(100, (spentThisMonth / totalIncome) * 100) : 0;
@@ -142,7 +131,7 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
             onClick={startAdd}
             className="btn-pill btn-pill-primary btn-pill-sm"
           >
-            {entries.length > 0 ? t("expenses.budgetAddAnother") : t("expenses.budgetAdd")}
+            {monthEntries.length > 0 ? t("expenses.budgetAddAnother") : t("expenses.budgetAdd")}
           </button>
         )}
       </div>
@@ -193,11 +182,11 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
         </div>
       )}
 
-      {entries.length === 0 ? (
+      {monthEntries.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted">{t("expenses.budgetNone")}</p>
       ) : (
         <div className="mb-5 flex flex-col gap-2">
-          {entries.map((entry) => {
+          {monthEntries.map((entry) => {
             const incomeType = getIncomeType(entry.incomeType);
             return (
               <div
@@ -233,7 +222,7 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
         </div>
       )}
 
-      {entries.length > 0 && (
+      {monthEntries.length > 0 && (
         <div>
           <div className="mb-1 flex items-center justify-between text-sm">
             <span className="font-medium">{t("expenses.budgetTotalIncome")}</span>

@@ -20,6 +20,15 @@ export interface Receipt {
   createdAt: string;
 }
 
+export interface IncomeEntry {
+  id: string;
+  year: number;
+  month: number;
+  amount: number;
+  incomeType: string;
+  label: string | null;
+}
+
 export interface ExtractedReceipt {
   merchant: string;
   date: string;

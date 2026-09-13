@@ -14,7 +14,7 @@ import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
-type Source = "ai" | "local" | null;
+type Source = "ai" | "local" | "manual" | null;
 
 interface Draft {
   merchant: string;
@@ -74,6 +74,7 @@ export default function UploadReceipt({
   const [source, setSource] = useState<Source>(null);
   const [showMore, setShowMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
   async function handleFile(selectedFile: File) {
@@ -122,6 +123,34 @@ export default function UploadReceipt({
   function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
     if (selected) handleFile(selected);
+  }
+
+  async function handleManualFile(selectedFile: File) {
+    setError(null);
+    setFile(selectedFile);
+    const dataUrl = await fileToDataUrl(selectedFile);
+    setPreview(dataUrl);
+    setDraft({
+      merchant: "",
+      date: new Date().toISOString().slice(0, 10),
+      amount: 0,
+      subcategory: "uncategorized",
+      reliefCategory: null,
+      isEInvoice: false,
+      type: "expense",
+      paymentMethod: "",
+      accountName: "",
+      tags: "",
+      isRecurring: false,
+      location: "",
+    });
+    setSource("manual");
+    setStatus("review");
+  }
+
+  function onManualInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0];
+    if (selected) handleManualFile(selected);
   }
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -210,31 +239,50 @@ export default function UploadReceipt({
         className="hidden"
         onChange={onInputChange}
       />
+      <input
+        ref={manualInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={onManualInputChange}
+      />
 
       {status === "idle" && (
-        <div
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
-            dragOver
-              ? "border-accent bg-accent/5"
-              : "border-border hover:border-accent/50"
-          }`}
-        >
-          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-2xl">
-            📷
-          </span>
-          <p className="text-sm font-medium">{t("upload.drop")}</p>
-          <p className="mt-1 text-xs text-muted">{t("upload.hint")}</p>
-          {!online && (
-            <p className="mt-2 text-xs text-amber-300">{t("upload.offlineNotice")}</p>
-          )}
-        </div>
+        <>
+          <div
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
+              dragOver
+                ? "border-accent bg-accent/5"
+                : "border-border hover:border-accent/50"
+            }`}
+          >
+            <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-2xl">
+              📷
+            </span>
+            <p className="text-sm font-medium">{t("upload.drop")}</p>
+            <p className="mt-1 text-xs text-muted">{t("upload.hint")}</p>
+            {!online && (
+              <p className="mt-2 text-xs text-amber-300">{t("upload.offlineNotice")}</p>
+            )}
+          </div>
+          <div className="mt-4 flex flex-col items-center gap-2 text-center">
+            <button
+              type="button"
+              onClick={() => manualInputRef.current?.click()}
+              className="btn-pill btn-pill-outline btn-pill-sm"
+            >
+              ✍️ {t("upload.manualAdd")}
+            </button>
+            <p className="max-w-sm text-xs text-muted">{t("upload.manualHint")}</p>
+          </div>
+        </>
       )}
 
       {status === "scanning" && (
@@ -285,10 +333,16 @@ export default function UploadReceipt({
                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                     source === "ai"
                       ? "bg-accent/15 text-accent"
-                      : "bg-amber-400/15 text-amber-300"
+                      : source === "local"
+                        ? "bg-amber-400/15 text-amber-300"
+                        : "bg-indigo-400/15 text-indigo-300"
                   }`}
                 >
-                  {source === "ai" ? t("upload.sourceAi") : t("upload.sourceLocal")}
+                  {source === "ai"
+                    ? t("upload.sourceAi")
+                    : source === "local"
+                      ? t("upload.sourceLocal")
+                      : t("upload.sourceManual")}
                 </span>
               )}
             </div>

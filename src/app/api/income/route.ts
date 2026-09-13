@@ -5,12 +5,14 @@ import { INCOME_TYPE_IDS } from "@/lib/incomeTypes";
 
 export const runtime = "nodejs";
 
-function parseYearMonth(req: NextRequest): { year: number; month: number } | null {
+function parseYearMonth(req: NextRequest): { year?: number; month?: number } {
   const url = new URL(req.url);
-  const year = Number(url.searchParams.get("year"));
-  const month = Number(url.searchParams.get("month"));
-  if (!year || !month || month < 1 || month > 12) return null;
-  return { year, month };
+  const yearParam = url.searchParams.get("year");
+  const monthParam = url.searchParams.get("month");
+  return {
+    year: yearParam ? Number(yearParam) : undefined,
+    month: monthParam ? Number(monthParam) : undefined,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -19,13 +21,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const period = parseYearMonth(req);
-  if (!period) {
-    return NextResponse.json({ error: "Invalid year/month." }, { status: 400 });
-  }
+  // year/month are both optional here: omitting month lists a whole year,
+  // and omitting both lists every entry the user has ever recorded — the
+  // dashboard uses that to keep the monthly tracker and any multi-month
+  // view (e.g. yearly cash flow) in sync with the same data.
+  const { year, month } = parseYearMonth(req);
 
   try {
-    const entries = await listIncomeEntries(user.id, period.year, period.month);
+    const entries = await listIncomeEntries(user.id, year, month);
     return NextResponse.json({ entries });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

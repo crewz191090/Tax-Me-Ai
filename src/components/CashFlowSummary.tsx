@@ -1,14 +1,16 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import type { Receipt } from "@/lib/types";
+import type { IncomeEntry, Receipt } from "@/lib/types";
 
 export default function CashFlowSummary({
   receipts,
+  incomeEntries,
   year,
   month,
 }: {
   receipts: Receipt[];
+  incomeEntries: IncomeEntry[];
   year: number;
   month: number | null;
 }) {
@@ -26,6 +28,16 @@ export default function CashFlowSummary({
     }
     if (r.type === "income") income += r.amount;
     else if (r.type === "expense") expense += r.amount;
+  }
+
+  // Monthly income entries (salary, side income, etc.) are tracked
+  // separately from receipt transactions, but they're still real income —
+  // fold them into the same total so this summary matches what the user
+  // set in the Monthly income tracker instead of looking disconnected.
+  for (const e of incomeEntries) {
+    if (e.year !== year) continue;
+    if (month !== null && e.month !== month) continue;
+    income += e.amount;
   }
 
   const net = income - expense;

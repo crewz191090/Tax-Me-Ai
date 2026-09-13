@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import { downloadCsv } from "@/lib/exportCsv";
 import { getPendingReceipts, syncPendingReceipts } from "@/lib/offlineQueue";
-import type { Receipt } from "@/lib/types";
+import type { IncomeEntry, Receipt } from "@/lib/types";
 
 export default function DashboardPage() {
   const { t } = useLanguage();
@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const online = useOnlineStatus();
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -43,6 +44,12 @@ export default function DashboardPage() {
       .catch((err) =>
         setLoadError(err instanceof Error ? err.message : "Failed to load receipts.")
       );
+  }, []);
+
+  const refreshIncome = useCallback(() => {
+    return fetch("/api/income")
+      .then((res) => res.json() as Promise<{ entries?: IncomeEntry[] }>)
+      .then((json) => setIncomeEntries(json.entries ?? []));
   }, []);
 
   const refreshPendingCount = useCallback(() => {
@@ -68,8 +75,9 @@ export default function DashboardPage() {
     }
 
     refreshReceipts().finally(() => setLoaded(true));
+    refreshIncome();
     refreshPendingCount();
-  }, [authLoading, user, router, refreshReceipts, refreshPendingCount]);
+  }, [authLoading, user, router, refreshReceipts, refreshIncome, refreshPendingCount]);
 
   useEffect(() => {
     if (!online) return;
@@ -144,10 +152,19 @@ export default function DashboardPage() {
                 <ExpensesOverview receipts={receipts} />
               </div>
               <div className="mb-6">
-                <CashFlowSummary receipts={receipts} year={year} month={null} />
+                <CashFlowSummary
+                  receipts={receipts}
+                  incomeEntries={incomeEntries}
+                  year={year}
+                  month={null}
+                />
               </div>
               <div className="mb-6">
-                <BudgetTracker receipts={receipts} />
+                <BudgetTracker
+                  receipts={receipts}
+                  entries={incomeEntries}
+                  onEntriesChange={setIncomeEntries}
+                />
               </div>
               <div className="mb-6">
                 <ReliefSummary
