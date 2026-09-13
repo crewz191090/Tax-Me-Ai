@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import FloatingOrbs from "@/components/FloatingOrbs";
 import UploadReceipt from "@/components/UploadReceipt";
 import CloneExpenses from "@/components/CloneExpenses";
 import ReceiptsTable from "@/components/ReceiptsTable";
@@ -147,8 +146,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       <Header />
-      <main className="relative flex-1 overflow-hidden">
-        <FloatingOrbs />
+      <main className="flex-1">
         <div className="mx-auto max-w-5xl px-6 py-12">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">

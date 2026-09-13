@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import FloatingOrbs from "./FloatingOrbs";
 
 export default function ResetPasswordForm() {
   const { t } = useLanguage();
@@ -42,7 +41,6 @@ export default function ResetPasswordForm() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-radial-glow px-6">
-      <FloatingOrbs />
       <div className="glass glow-border w-full max-w-sm rounded-2xl border border-border p-8">
         <Link href="/" className="mb-6 flex items-center justify-center gap-2">
           <Image

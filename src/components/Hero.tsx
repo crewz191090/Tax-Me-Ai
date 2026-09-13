@@ -3,7 +3,6 @@
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import ReceiptStack from "./ReceiptStack";
-import FloatingOrbs from "./FloatingOrbs";
 
 export default function Hero() {
   const { t } = useLanguage();
@@ -11,7 +10,6 @@ export default function Hero() {
 
   return (
     <section id="top" className="relative overflow-hidden bg-radial-glow">
-      <FloatingOrbs />
       <div className="mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-16 md:grid-cols-2 md:items-center md:pt-24">
         <div>
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 font-mono-tight text-xs text-muted">

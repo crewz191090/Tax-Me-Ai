@@ -2,7 +2,6 @@
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
-import FloatingOrbs from "./FloatingOrbs";
 
 export default function CtaSection() {
   const { t } = useLanguage();
@@ -10,7 +9,6 @@ export default function CtaSection() {
 
   return (
     <section className="relative overflow-hidden border-b border-border bg-radial-glow py-24">
-      <FloatingOrbs />
       <div className="mx-auto max-w-2xl px-6 text-center">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {t("cta.title")}

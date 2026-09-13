@@ -40,12 +40,14 @@ body {
   color: var(--foreground);
 }
 
-/* Round, blurred orbs that drift around their container and bounce
-   off its edges, like a slow screensaver — replaces the old fine
-   grid-line backdrop. Rendered by <FloatingOrbs />; the container just
-   needs `relative overflow-hidden` so the orbs clip at its bounds. */
+/* Round, blurred orbs that drift and bounce across the whole viewport,
+   like a slow screensaver — replaces the old fine grid-line backdrop.
+   Rendered once in the root layout as a fixed backdrop, so it always
+   covers the full screen (top to bottom) and keeps animating
+   continuously behind every page, independent of scroll position and
+   never remounted by route changes. */
 .floating-orbs {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
