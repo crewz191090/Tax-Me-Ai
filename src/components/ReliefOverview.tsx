@@ -6,6 +6,7 @@ import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
 export default function ReliefOverview() {
   const { lang, t } = useLanguage();
   const categories = RELIEF_CATEGORIES.filter((c) => c.cap > 0);
+  const currentYear = new Date().getFullYear();
 
   return (
     <section id="relief" className="border-b border-border py-24">
@@ -14,7 +15,7 @@ export default function ReliefOverview() {
           {t("relief.eyebrow")}
         </p>
         <h2 className="max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
-          {t("relief.title")}
+          {t("relief.title").replace("{year}", String(currentYear))}
         </h2>
         <p className="mt-4 max-w-2xl text-muted">{t("relief.subtitle")}</p>
 
