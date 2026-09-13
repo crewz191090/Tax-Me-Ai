@@ -119,8 +119,7 @@ export const translations = {
     "dashboard.globalFilter": "Showing data for:",
     "dashboard.tabExpenses": "Expenses Tracker",
     "dashboard.tabTax": "Tax Tracker",
-    "dashboard.subtitle":
-      "Scan, review and export — synced to your Cloudflare D1 database and R2 storage.",
+    "dashboard.subtitle": "Scan, review and export your receipts.",
     "dashboard.export": "Export CSV",
     "dashboard.loadError": "Failed to load receipts.",
     "dashboard.offline": "You're offline",
@@ -381,8 +380,7 @@ export const translations = {
     "dashboard.globalFilter": "Menunjukkan data untuk:",
     "dashboard.tabExpenses": "Penjejak Perbelanjaan",
     "dashboard.tabTax": "Penjejak Cukai",
-    "dashboard.subtitle":
-      "Imbas, semak dan eksport — disegerakkan ke pangkalan data D1 dan storan R2 Cloudflare anda.",
+    "dashboard.subtitle": "Imbas, semak dan eksport resit anda.",
     "dashboard.export": "Eksport CSV",
     "dashboard.loadError": "Gagal memuatkan resit.",
     "dashboard.offline": "Anda sedang offline",
