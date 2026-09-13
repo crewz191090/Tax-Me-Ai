@@ -212,7 +212,7 @@ export default function DashboardPage() {
           {loaded && (
             <>
               <div className="mb-6">
-                <SummaryBar receipts={receipts} year={year} />
+                <SummaryBar receipts={receipts} />
               </div>
               <div className="mb-6">
                 <ExpensesOverview receipts={receipts} />

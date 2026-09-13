@@ -450,12 +450,17 @@ export default function UploadReceipt({
 
       {(status === "review" || status === "saving") && draft && (
         <div className="grid gap-6 md:grid-cols-2">
-          {preview && (
+          {preview ? (
             <img
               src={preview}
               alt="Receipt preview"
               className="max-h-72 w-full rounded-lg border border-border object-contain"
             />
+          ) : (
+            <div className="flex max-h-72 min-h-[220px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-surface-2 text-muted">
+              <span className="text-4xl">🖼️</span>
+              <span className="text-xs font-medium">{t("table.noImage")}</span>
+            </div>
           )}
 
           <div className="flex flex-col gap-3">

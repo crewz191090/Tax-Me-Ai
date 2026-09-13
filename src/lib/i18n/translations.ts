@@ -204,6 +204,7 @@ export const translations = {
     "table.editDate": "Click to edit date",
     "table.noImage": "No image or receipt",
 
+    "summary.for": "For",
     "summary.totalReceipts": "Total receipts",
     "summary.totalSpent": "Total spent",
     "summary.claimable": "Claimable this year",
@@ -454,6 +455,7 @@ export const translations = {
     "table.editDate": "Klik untuk edit tarikh",
     "table.noImage": "Tiada gambar atau resit",
 
+    "summary.for": "Bagi",
     "summary.totalReceipts": "Jumlah resit",
     "summary.totalSpent": "Jumlah perbelanjaan",
     "summary.claimable": "Boleh dituntut tahun ini",
