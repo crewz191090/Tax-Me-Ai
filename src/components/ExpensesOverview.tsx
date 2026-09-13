@@ -9,19 +9,10 @@ import {
   yearsWithReceipts,
   type Period,
 } from "@/lib/reliefCalc";
-import { downloadMonthlyExpensePdf } from "@/lib/exportPdf";
 import CategoryPieChart from "./CategoryPieChart";
 import SpendingTrendChart from "./SpendingTrendChart";
+import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import type { Receipt } from "@/lib/types";
-
-const MONTHS_EN = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-const MONTHS_BM = [
-  "Januari", "Februari", "Mac", "April", "Mei", "Jun",
-  "Julai", "Ogos", "September", "Oktober", "November", "Disember",
-];
 
 const currentYear = new Date().getFullYear();
 const currentMonth = new Date().getMonth() + 1;
@@ -54,10 +45,6 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
   );
 
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
-
-  function handleExportPdf() {
-    downloadMonthlyExpensePdf(receipts, year, month, monthNames[month - 1], lang);
-  }
 
   return (
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
@@ -110,11 +97,6 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
             </option>
           ))}
         </select>
-        {view === "month" && (
-          <button onClick={handleExportPdf} className="btn-pill btn-pill-outline btn-pill-sm ml-auto">
-            📄 {t("expenses.exportPdf")}
-          </button>
-        )}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">

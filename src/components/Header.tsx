@@ -16,11 +16,11 @@ export default function Header() {
           <Image
             src="/logo.png"
             alt="Tax Me AI"
-            width={28}
-            height={28}
-            className="h-7 w-7 rounded-lg object-contain"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-lg object-contain"
           />
-          <span className="text-base font-semibold tracking-tight">
+          <span className="text-2xl font-bold tracking-tight">
             Tax Me AI
           </span>
         </Link>

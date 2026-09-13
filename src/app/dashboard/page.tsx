@@ -18,6 +18,9 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import { downloadCsv } from "@/lib/exportCsv";
+import { downloadMonthlyExpensePdf } from "@/lib/exportPdf";
+import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
+import { yearsWithReceipts } from "@/lib/reliefCalc";
 import {
   clearPendingReceipts,
   getPendingReceipts,
@@ -27,7 +30,7 @@ import {
 import type { IncomeEntry, Receipt } from "@/lib/types";
 
 export default function DashboardPage() {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const online = useOnlineStatus();
@@ -37,6 +40,9 @@ export default function DashboardPage() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [year, setYear] = useState(new Date().getFullYear());
+  const now = new Date();
+  const [exportMonth, setExportMonth] = useState(now.getMonth() + 1);
+  const [exportYear, setExportYear] = useState(now.getFullYear());
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncErrors, setSyncErrors] = useState<SyncFailure[]>([]);
@@ -111,6 +117,17 @@ export default function DashboardPage() {
     refreshPendingCount();
   }
 
+  const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
+  const exportAvailableYears = (() => {
+    const years = new Set(yearsWithReceipts(receipts));
+    years.add(exportYear);
+    return Array.from(years).sort((a, b) => b - a);
+  })();
+
+  function handleExportPdf() {
+    downloadMonthlyExpensePdf(receipts, exportYear, exportMonth, monthNames[exportMonth - 1], lang);
+  }
+
   if (authLoading || !user) {
     return (
       <div className="flex flex-1 flex-col">
@@ -135,9 +152,36 @@ export default function DashboardPage() {
               <p className="mt-1 text-sm text-muted">{t("dashboard.subtitle")}</p>
             </div>
             {receipts.length > 0 && (
-              <button onClick={() => downloadCsv(receipts)} className="btn-pill btn-pill-outline">
-                {t("dashboard.export")}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={exportMonth}
+                  onChange={(e) => setExportMonth(Number(e.target.value))}
+                  className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+                >
+                  {monthNames.map((name, i) => (
+                    <option key={name} value={i + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={exportYear}
+                  onChange={(e) => setExportYear(Number(e.target.value))}
+                  className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+                >
+                  {exportAvailableYears.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+                <button onClick={handleExportPdf} className="btn-pill btn-pill-outline">
+                  📄 {t("expenses.exportPdf")}
+                </button>
+                <button onClick={() => downloadCsv(receipts)} className="btn-pill btn-pill-outline">
+                  {t("dashboard.export")}
+                </button>
+              </div>
             )}
           </div>
 
