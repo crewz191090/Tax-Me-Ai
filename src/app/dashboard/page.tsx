@@ -147,49 +147,11 @@ export default function DashboardPage() {
       <Header />
       <main className="flex-1 bg-grid">
         <div className="mx-auto max-w-5xl px-6 py-12">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                {t("dashboard.title")}
-              </h1>
-              <p className="mt-1 text-sm text-muted">{t("dashboard.subtitle")}</p>
-            </div>
-            {receipts.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <button onClick={handleExportPdf} className="btn-pill btn-pill-outline">
-                  📄 {t("expenses.exportPdf")}
-                </button>
-                <button onClick={() => downloadCsv(receipts)} className="btn-pill btn-pill-outline">
-                  {t("dashboard.export")}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="mb-8 flex flex-wrap items-center gap-2 rounded-xl border border-accent/30 bg-surface-2/50 px-4 py-3">
-            <span className="text-xs font-medium text-muted">{t("dashboard.globalFilter")}</span>
-            <select
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-            >
-              {monthNames.map((name, i) => (
-                <option key={name} value={i + 1}>
-                  {name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-            >
-              {availableYears.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight">
+              {t("dashboard.title")}
+            </h1>
+            <p className="mt-1 text-sm text-muted">{t("dashboard.subtitle")}</p>
           </div>
 
           <SyncStatusBanner
@@ -239,6 +201,49 @@ export default function DashboardPage() {
 
               {tab === "expenses" && (
                 <>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/30 bg-surface-2/50 px-4 py-3">
+                      <span className="text-xs font-medium text-muted">
+                        {t("dashboard.globalFilter")}
+                      </span>
+                      <select
+                        value={month}
+                        onChange={(e) => setMonth(Number(e.target.value))}
+                        className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+                      >
+                        {monthNames.map((name, i) => (
+                          <option key={name} value={i + 1}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={year}
+                        onChange={(e) => setYear(Number(e.target.value))}
+                        className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+                      >
+                        {availableYears.map((y) => (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {receipts.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button onClick={handleExportPdf} className="btn-pill btn-pill-outline">
+                          📄 {t("expenses.exportPdf")}
+                        </button>
+                        <button
+                          onClick={() => downloadCsv(receipts)}
+                          className="btn-pill btn-pill-outline"
+                        >
+                          {t("dashboard.export")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="mb-6">
                     <SummaryBar receipts={receipts} month={month} year={year} />
                   </div>
@@ -283,7 +288,7 @@ export default function DashboardPage() {
               )}
 
               {tab === "tax" && (
-                <ReliefSummary receipts={receipts} month={month} year={year} />
+                <ReliefSummary receipts={receipts} />
               )}
             </>
           )}

@@ -1,9 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { computeReliefSummary, getReliefAlerts } from "@/lib/reliefCalc";
+import { computeReliefSummary, getReliefAlerts, yearsWithReceipts } from "@/lib/reliefCalc";
 import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
-import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import ReliefGauge from "./ReliefGauge";
 import ReliefCategoryDonut from "./ReliefCategoryDonut";
 import type { Receipt } from "@/lib/types";
@@ -13,19 +13,20 @@ const TOTAL_RELIEF_CAP = RELIEF_CATEGORIES.filter((c) => c.cap > 0).reduce(
   0
 );
 
-export default function ReliefSummary({
-  receipts,
-  month,
-  year,
-}: {
-  receipts: Receipt[];
-  month: number;
-  year: number;
-}) {
+export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
   const { lang, t } = useLanguage();
-  const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
+  const [year, setYear] = useState(new Date().getFullYear());
 
-  const summary = computeReliefSummary(receipts, year, month);
+  const availableYears = (() => {
+    const years = new Set(yearsWithReceipts(receipts));
+    years.add(year);
+    return Array.from(years).sort((a, b) => b - a);
+  })();
+
+  // Tax relief is an annual concept (LHDN caps reset yearly), so this tab
+  // deliberately does not use the dashboard's global month filter — only a
+  // year selector, always scoped to the whole year.
+  const summary = computeReliefSummary(receipts, year);
   const rowsWithSpend = summary.rows.filter((r) => r.spent > 0);
   const alerts = getReliefAlerts(summary.rows);
 
@@ -33,9 +34,20 @@ export default function ReliefSummary({
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">{t("dashboard.reliefSummary")}</h2>
-        <span className="text-xs text-muted">
-          {t("dashboard.reliefSummaryFor")} {monthNames[month - 1]} {year}
-        </span>
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <span>{t("dashboard.reliefSummaryFor")}</span>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className="rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-foreground outline-none"
+          >
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {alerts.length > 0 && (
