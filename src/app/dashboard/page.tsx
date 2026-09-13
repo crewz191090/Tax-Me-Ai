@@ -14,6 +14,7 @@ import CashFlowSummary from "@/components/CashFlowSummary";
 import RecurringExpenses from "@/components/RecurringExpenses";
 import AiInsights from "@/components/AiInsights";
 import SyncStatusBanner from "@/components/SyncStatusBanner";
+import GlassSegmentedControl from "@/components/GlassSegmentedControl";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
@@ -180,20 +181,15 @@ export default function DashboardPage() {
 
           {loaded && (
             <>
-              <div className="glass-segment mb-6 w-fit text-sm">
-                <button
-                  onClick={() => setTab("expenses")}
-                  className={`glass-segment-btn ${tab === "expenses" ? "glass-segment-btn-active" : ""}`}
-                >
-                  {t("dashboard.tabExpenses")}
-                </button>
-                <button
-                  onClick={() => setTab("tax")}
-                  className={`glass-segment-btn ${tab === "tax" ? "glass-segment-btn-active" : ""}`}
-                >
-                  {t("dashboard.tabTax")}
-                </button>
-              </div>
+              <GlassSegmentedControl
+                value={tab}
+                onChange={setTab}
+                className="mb-6 w-fit text-sm"
+                options={[
+                  { value: "expenses", label: t("dashboard.tabExpenses") },
+                  { value: "tax", label: t("dashboard.tabTax") },
+                ]}
+              />
 
               {tab === "expenses" && (
                 <>

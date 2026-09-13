@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
+import GlassSegmentedControl from "./GlassSegmentedControl";
 
 export default function Header() {
   const { lang, setLang, t } = useLanguage();
@@ -27,24 +28,19 @@ export default function Header() {
 
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
           {!loading && user && (
-            <Link href="/dashboard" className="btn-pill btn-pill-outline btn-pill-sm">
+            <Link href="/dashboard" className="glass-pill-btn">
               {t("nav.dashboard")}
             </Link>
           )}
 
-          <div className="glass-segment text-xs">
-            {(["en", "bm"] as const).map((option) => (
-              <button
-                key={option}
-                onClick={() => setLang(option)}
-                className={`glass-segment-btn uppercase ${
-                  lang === option ? "glass-segment-btn-active" : ""
-                }`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
+          <GlassSegmentedControl
+            value={lang}
+            onChange={setLang}
+            options={[
+              { value: "en", label: "EN" },
+              { value: "bm", label: "BM" },
+            ]}
+          />
 
           {!loading && user ? (
             <>

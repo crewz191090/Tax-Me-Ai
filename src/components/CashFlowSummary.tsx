@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
+import GlassSegmentedControl from "./GlassSegmentedControl";
 import type { IncomeEntry, Receipt } from "@/lib/types";
 
 export default function CashFlowSummary({
@@ -51,20 +52,15 @@ export default function CashFlowSummary({
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">{t("cashflow.title")}</h2>
-        <div className="glass-segment text-xs">
-          <button
-            onClick={() => setView("month")}
-            className={`glass-segment-btn ${view === "month" ? "glass-segment-btn-active" : ""}`}
-          >
-            {t("expenses.viewMonth")}
-          </button>
-          <button
-            onClick={() => setView("year")}
-            className={`glass-segment-btn ${view === "year" ? "glass-segment-btn-active" : ""}`}
-          >
-            {t("expenses.viewYear")}
-          </button>
-        </div>
+        <GlassSegmentedControl
+          value={view}
+          onChange={setView}
+          className="text-xs"
+          options={[
+            { value: "month", label: t("expenses.viewMonth") },
+            { value: "year", label: t("expenses.viewYear") },
+          ]}
+        />
       </div>
 
       <p className="mb-5 text-sm text-muted">
