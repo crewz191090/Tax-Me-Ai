@@ -4,19 +4,22 @@ import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { CategoryBreakdownRow } from "@/lib/reliefCalc";
 
-const PALETTE = [
-  "#22d3ee", // cyan
-  "#38bdf8", // sky
-  "#6366f1", // indigo
-  "#a78bfa", // violet
-  "#f472b6", // pink
-  "#34d399", // emerald
-  "#fbbf24", // amber
-  "#fb7185", // rose
-  "#2dd4bf", // teal
-  "#818cf8", // indigo-light
-  "#4ade80", // green
-  "#e879f9", // fuchsia
+// Each entry is a [from, to] gradient pair — a lighter tint fading into the
+// base hue — so every pie slice reads as a glowing futuristic tube rather
+// than a flat color chip.
+const GRADIENT_PALETTE: [string, string][] = [
+  ["#67e8f9", "#0891b2"], // cyan
+  ["#7dd3fc", "#0284c7"], // sky
+  ["#a5b4fc", "#4338ca"], // indigo
+  ["#c4b5fd", "#7c3aed"], // violet
+  ["#f9a8d4", "#db2777"], // pink
+  ["#6ee7b7", "#059669"], // emerald
+  ["#fde68a", "#d97706"], // amber
+  ["#fda4af", "#e11d48"], // rose
+  ["#5eead4", "#0d9488"], // teal
+  ["#c7d2fe", "#4f46e5"], // indigo-light
+  ["#86efac", "#16a34a"], // green
+  ["#f0abfc", "#a21caf"], // fuchsia
 ];
 
 const RADIUS = 70;
@@ -34,13 +37,22 @@ export default function CategoryPieChart({ rows }: { rows: CategoryBreakdownRow[
   const total = rows.reduce((sum, r) => sum + r.amount, 0);
 
   const segments = rows.reduce<
-    { row: (typeof rows)[number]; color: string; dash: number; offset: number; pct: number }[]
+    {
+      row: (typeof rows)[number];
+      gradId: string;
+      swatch: string;
+      dash: number;
+      offset: number;
+      pct: number;
+    }[]
   >((acc, row, i) => {
     const fraction = total > 0 ? row.amount / total : 0;
     const cumulativeBefore = acc.reduce((sum, s) => sum + s.pct / 100, 0);
+    const [from, to] = GRADIENT_PALETTE[i % GRADIENT_PALETTE.length];
     acc.push({
       row,
-      color: PALETTE[i % PALETTE.length],
+      gradId: `pieGrad${i}`,
+      swatch: `linear-gradient(135deg, ${from}, ${to})`,
       dash: fraction * CIRCUMFERENCE,
       offset: -cumulativeBefore * CIRCUMFERENCE,
       pct: fraction * 100,
@@ -52,6 +64,14 @@ export default function CategoryPieChart({ rows }: { rows: CategoryBreakdownRow[
     <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-center">
       <div className="relative h-44 w-44 shrink-0">
         <svg viewBox="0 0 180 180" className="h-full w-full -rotate-90">
+          <defs>
+            {GRADIENT_PALETTE.map(([from, to], i) => (
+              <linearGradient key={i} id={`pieGrad${i}`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor={from} />
+                <stop offset="100%" stopColor={to} />
+              </linearGradient>
+            ))}
+          </defs>
           <circle
             cx="90"
             cy="90"
@@ -67,15 +87,21 @@ export default function CategoryPieChart({ rows }: { rows: CategoryBreakdownRow[
               cy="90"
               r={RADIUS}
               fill="none"
-              stroke={seg.color}
+              stroke={`url(#${seg.gradId})`}
               strokeWidth={hovered === seg.row.categoryId ? STROKE + 4 : STROKE}
               strokeDasharray={`${seg.dash} ${CIRCUMFERENCE - seg.dash}`}
               strokeDashoffset={seg.offset}
               strokeLinecap="butt"
               className="transition-all duration-200"
+              style={{
+                cursor: "pointer",
+                filter:
+                  hovered === seg.row.categoryId
+                    ? "drop-shadow(0 0 6px rgba(103,232,249,0.5))"
+                    : undefined,
+              }}
               onMouseEnter={() => setHovered(seg.row.categoryId)}
               onMouseLeave={() => setHovered(null)}
-              style={{ cursor: "pointer" }}
             />
           ))}
         </svg>
@@ -105,7 +131,7 @@ export default function CategoryPieChart({ rows }: { rows: CategoryBreakdownRow[
           >
             <span
               className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: seg.color }}
+              style={{ background: seg.swatch }}
             />
             <span className="flex flex-1 items-center gap-1 truncate">
               {seg.row.emoji} {lang === "bm" ? seg.row.nameBm : seg.row.nameEn}

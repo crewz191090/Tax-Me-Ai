@@ -18,6 +18,16 @@ export default function SpendingTrendChart({ points }: { points: TrendPoint[] })
 
   const max = Math.max(...points.map((p) => p.total), 1);
   const gridLines = [0.25, 0.5, 0.75, 1];
+  const n = points.length;
+
+  // The trend line shares the same 0-100 percentage space as the bars
+  // beneath it, so it lines up with each bar's top regardless of container
+  // width — a lightweight combo chart without a charting library.
+  const linePoints = points.map((p, i) => {
+    const heightPct = Math.max((p.total / max) * 100, p.total > 0 ? 3 : 0);
+    return { x: ((i + 0.5) / n) * 100, y: 100 - heightPct, total: p.total };
+  });
+  const pathD = linePoints.map((pt, i) => `${i === 0 ? "M" : "L"} ${pt.x} ${pt.y}`).join(" ");
 
   return (
     <div>
@@ -29,6 +39,45 @@ export default function SpendingTrendChart({ points }: { points: TrendPoint[] })
             style={{ bottom: `${g * 100}%` }}
           />
         ))}
+
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full overflow-visible"
+        >
+          <defs>
+            <linearGradient id="trendLineGradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#22d3ee" />
+              <stop offset="50%" stopColor="#818cf8" />
+              <stop offset="100%" stopColor="#e879f9" />
+            </linearGradient>
+          </defs>
+          <path
+            d={pathD}
+            fill="none"
+            stroke="url(#trendLineGradient)"
+            strokeWidth={1.6}
+            vectorEffect="non-scaling-stroke"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ filter: "drop-shadow(0 0 3px rgba(129,140,248,0.7))" }}
+          />
+          {linePoints.map(
+            (pt, i) =>
+              pt.total > 0 && (
+                <circle
+                  key={i}
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={1.8}
+                  fill="#f5f3ff"
+                  stroke="#a78bfa"
+                  strokeWidth={0.8}
+                  vectorEffect="non-scaling-stroke"
+                />
+              )
+          )}
+        </svg>
 
         {points.map((point) => {
           const heightPct = (point.total / max) * 100;
@@ -48,8 +97,9 @@ export default function SpendingTrendChart({ points }: { points: TrendPoint[] })
                   height: `${Math.max(heightPct, point.total > 0 ? 3 : 1)}%`,
                   background:
                     point.total > 0
-                      ? "linear-gradient(180deg, var(--accent-strong), var(--accent))"
+                      ? "linear-gradient(180deg, #c084fc, #6366f1)"
                       : "var(--surface-2)",
+                  boxShadow: point.total > 0 ? "0 0 12px rgba(139,92,246,0.25)" : undefined,
                 }}
               />
             </div>

@@ -5,10 +5,10 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { INCOME_TYPES, getIncomeType } from "@/lib/incomeTypes";
 import type { IncomeEntry, Receipt } from "@/lib/types";
 
-function barColor(pct: number) {
-  if (pct >= 100) return "bg-red-400";
-  if (pct >= 70) return "bg-amber-400";
-  return "bg-accent";
+function barGradient(pct: number) {
+  if (pct >= 100) return "linear-gradient(90deg, #fb7185, #e11d48)";
+  if (pct >= 70) return "linear-gradient(90deg, #fbbf24, #f59e0b)";
+  return "linear-gradient(90deg, #22d3ee, #6366f1)";
 }
 
 interface EntryForm {
@@ -232,8 +232,8 @@ export default function BudgetTracker({
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
             <div
-              className={`h-full rounded-full transition-all ${barColor(pct)}`}
-              style={{ width: `${pct}%` }}
+              className="h-full rounded-full transition-all"
+              style={{ width: `${pct}%`, background: barGradient(pct) }}
             />
           </div>
           <p className="mt-1 text-[11px] text-muted">

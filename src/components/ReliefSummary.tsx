@@ -58,8 +58,11 @@ export default function ReliefSummary({
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
                   <div
-                    className="h-full rounded-full bg-accent"
-                    style={{ width: `${pct}%` }}
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${pct}%`,
+                      background: "linear-gradient(90deg, #22d3ee, #6366f1)",
+                    }}
                   />
                 </div>
               </div>
