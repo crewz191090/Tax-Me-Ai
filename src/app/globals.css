@@ -62,89 +62,136 @@ body {
   width: 32vmin;
   height: 32vmin;
   background: rgba(34, 211, 238, 0.32);
-  animation: orb-bounce-a 34s linear infinite;
+  animation: orb-bounce-a 37s ease-in-out infinite;
 }
 
 .floating-orb-2 {
   width: 28vmin;
   height: 28vmin;
   background: rgba(99, 102, 241, 0.3);
-  animation: orb-bounce-b 42s linear infinite;
+  animation: orb-bounce-b 45s ease-in-out infinite;
 }
 
 .floating-orb-3 {
   width: 24vmin;
   height: 24vmin;
   background: rgba(168, 85, 247, 0.26);
-  animation: orb-bounce-c 38s linear infinite;
+  animation: orb-bounce-c 41s ease-in-out infinite;
 }
 
+/* Each orb's path zig-zags independently on both axes (not a single
+   repeating diagonal) so the motion reads as free-floating rather than
+   sliding back and forth along one line. */
 @keyframes orb-bounce-a {
   0% {
-    top: 5%;
-    left: 8%;
+    top: 8%;
+    left: 10%;
+  }
+  12% {
+    top: 18%;
+    left: 62%;
   }
   25% {
-    top: 62%;
-    left: 72%;
+    top: 58%;
+    left: 78%;
+  }
+  38% {
+    top: 72%;
+    left: 38%;
   }
   50% {
-    top: 12%;
-    left: 80%;
+    top: 60%;
+    left: 6%;
+  }
+  63% {
+    top: 22%;
+    left: 26%;
   }
   75% {
-    top: 68%;
-    left: 15%;
+    top: 8%;
+    left: 55%;
+  }
+  88% {
+    top: 42%;
+    left: 82%;
   }
   100% {
-    top: 5%;
-    left: 8%;
+    top: 8%;
+    left: 10%;
   }
 }
 
 @keyframes orb-bounce-b {
   0% {
-    top: 58%;
-    left: 75%;
+    top: 60%;
+    left: 74%;
   }
-  25% {
-    top: 8%;
-    left: 12%;
+  14% {
+    top: 12%;
+    left: 60%;
   }
-  50% {
-    top: 72%;
-    left: 32%;
+  27% {
+    top: 6%;
+    left: 14%;
   }
-  75% {
-    top: 18%;
-    left: 62%;
+  40% {
+    top: 45%;
+    left: 8%;
+  }
+  53% {
+    top: 74%;
+    left: 30%;
+  }
+  66% {
+    top: 68%;
+    left: 66%;
+  }
+  80% {
+    top: 30%;
+    left: 78%;
+  }
+  90% {
+    top: 20%;
+    left: 40%;
   }
   100% {
-    top: 58%;
-    left: 75%;
+    top: 60%;
+    left: 74%;
   }
 }
 
 @keyframes orb-bounce-c {
   0% {
-    top: 30%;
-    left: 42%;
+    top: 32%;
+    left: 44%;
   }
-  25% {
-    top: 78%;
-    left: 60%;
+  15% {
+    top: 74%;
+    left: 62%;
   }
-  50% {
-    top: 10%;
-    left: 72%;
+  30% {
+    top: 82%;
+    left: 18%;
   }
-  75% {
-    top: 52%;
-    left: 6%;
+  45% {
+    top: 50%;
+    left: 4%;
+  }
+  58% {
+    top: 12%;
+    left: 20%;
+  }
+  70% {
+    top: 8%;
+    left: 66%;
+  }
+  85% {
+    top: 48%;
+    left: 78%;
   }
   100% {
-    top: 30%;
-    left: 42%;
+    top: 32%;
+    left: 44%;
   }
 }
 
