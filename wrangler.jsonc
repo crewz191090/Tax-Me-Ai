@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tax-me-ai",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tax-me-ai-db",
+      "database_id": "7a645a99-659b-4ca7-abca-4601d213726c"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "RECEIPTS_BUCKET",
+      "bucket_name": "tax-me-ai-receipts"
+    }
+  ],
+  "vars": {
+    "NEXTJS_ENV": "production"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

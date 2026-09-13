@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from "next/server";
+import { extractReceiptFromImage } from "@/lib/gemini";
+
+export const runtime = "nodejs";
+
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData();
+    const file = formData.get("file");
+
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json(
+        { error: "No file uploaded." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_FILE_BYTES) {
+      return NextResponse.json(
+        { error: "File too large. Max 10MB." },
+        { status: 400 }
+      );
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Unsupported file type. Upload a JPG, PNG, or WEBP image." },
+        { status: 400 }
+      );
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const base64Data = buffer.toString("base64");
+
+    const extracted = await extractReceiptFromImage({
+      base64Data,
+      mimeType: file.type,
+    });
+
+    return NextResponse.json({ extracted });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
