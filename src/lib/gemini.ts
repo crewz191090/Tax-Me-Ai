@@ -1,6 +1,12 @@
 import { GoogleGenerativeAI, SchemaType, type ObjectSchema } from "@google/generative-ai";
-import { CATEGORIES } from "./categories";
+import { RELIEF_CATEGORIES } from "./reliefCategories";
 import type { ExtractedReceipt } from "./types";
+
+const CATEGORY_IDS = RELIEF_CATEGORIES.map((c) => c.id);
+
+const CATEGORY_GUIDE = RELIEF_CATEGORIES.map(
+  (c) => `- "${c.id}": ${c.descriptionEn}`
+).join("\n");
 
 const EXTRACTION_SCHEMA: ObjectSchema = {
   type: SchemaType.OBJECT,
@@ -20,8 +26,8 @@ const EXTRACTION_SCHEMA: ObjectSchema = {
     category: {
       type: SchemaType.STRING,
       format: "enum",
-      description: `Best matching expense category. Must be one of: ${CATEGORIES.join(", ")}.`,
-      enum: [...CATEGORIES],
+      description: `Best matching Malaysian LHDN individual tax relief category id. Must be exactly one of the ids listed below. Use "not_deductible" if nothing matches:\n${CATEGORY_GUIDE}`,
+      enum: CATEGORY_IDS,
     },
     isEInvoice: {
       type: SchemaType.BOOLEAN,
@@ -60,9 +66,7 @@ export async function extractReceiptFromImage(params: {
       },
     },
     {
-      text: `You are reading a Malaysian business receipt or invoice. Extract the merchant name, transaction date, total amount, and the best-matching expense category from this list: ${CATEGORIES.join(
-        ", "
-      )}. If the date is unclear, use your best guess. If it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
+      text: `You are reading a Malaysian receipt or invoice to help an individual taxpayer track expenses that qualify for LHDN personal income tax relief (Year of Assessment 2025). Extract the merchant name, transaction date, and total amount. Then classify the expense into the single best-matching relief category id from this list:\n\n${CATEGORY_GUIDE}\n\nIf the receipt is general personal spending (groceries, entertainment, clothing, etc.) that does not match any relief, use "not_deductible". If it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
     },
   ]);
 
@@ -73,9 +77,7 @@ export async function extractReceiptFromImage(params: {
     merchant: parsed.merchant || "Unknown merchant",
     date: parsed.date || new Date().toISOString().slice(0, 10),
     amount: typeof parsed.amount === "number" ? parsed.amount : 0,
-    category: CATEGORIES.includes(parsed.category as (typeof CATEGORIES)[number])
-      ? parsed.category
-      : "Other",
+    category: CATEGORY_IDS.includes(parsed.category) ? parsed.category : "not_deductible",
     isEInvoice: Boolean(parsed.isEInvoice),
   };
 }

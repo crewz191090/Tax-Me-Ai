@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteReceiptById, updateReceiptFields } from "@/lib/db";
-import { deductiblePercentForCategory } from "@/lib/categories";
+import { RELIEF_CATEGORY_IDS } from "@/lib/reliefCategories";
 import { deleteReceiptImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -23,9 +23,8 @@ export async function PATCH(
     if (typeof body.merchant === "string") updates.merchant = body.merchant;
     if (typeof body.date === "string") updates.date = body.date;
     if (typeof body.amount === "number") updates.amount = body.amount;
-    if (typeof body.category === "string") {
+    if (typeof body.category === "string" && RELIEF_CATEGORY_IDS.includes(body.category)) {
       updates.category = body.category;
-      updates.deductiblePercent = deductiblePercentForCategory(body.category);
     }
     if (typeof body.notes === "string") updates.notes = body.notes;
 

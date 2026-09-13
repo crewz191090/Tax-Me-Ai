@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tax Me AI — Malaysian Receipt & Tax Tracker",
+  title: "Tax Me AI — Malaysian Receipt & Tax Relief Tracker",
   description:
-    "Snap or upload your receipts and let AI sort them into clean, LHDN-ready tax records — built for Malaysian sole traders, Sdn Bhds and the accountants who file for them.",
+    "Snap or upload your receipts and let AI match them to the right LHDN individual tax relief category — built for Malaysian individual taxpayers.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -25,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

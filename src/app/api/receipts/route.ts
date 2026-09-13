@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insertReceipt, listReceipts, newReceiptId } from "@/lib/db";
 import { uploadReceiptImage } from "@/lib/storage";
-import { deductiblePercentForCategory } from "@/lib/categories";
+import { RELIEF_CATEGORY_IDS } from "@/lib/reliefCategories";
 import type { Receipt } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -26,7 +26,10 @@ export async function POST(req: NextRequest) {
     const merchant = String(formData.get("merchant") ?? "").trim();
     const date = String(formData.get("date") ?? "");
     const amount = parseFloat(String(formData.get("amount") ?? "0"));
-    const category = String(formData.get("category") ?? "Other");
+    const rawCategory = String(formData.get("category") ?? "not_deductible");
+    const category = RELIEF_CATEGORY_IDS.includes(rawCategory)
+      ? rawCategory
+      : "not_deductible";
     const isEInvoice = String(formData.get("isEInvoice") ?? "false") === "true";
     const file = formData.get("file");
 
@@ -70,7 +73,6 @@ export async function POST(req: NextRequest) {
       date,
       amount,
       category,
-      deductiblePercent: deductiblePercentForCategory(category),
       imageKey,
       isEInvoice,
       createdAt: new Date().toISOString(),

@@ -5,13 +5,17 @@ import Header from "@/components/Header";
 import UploadReceipt from "@/components/UploadReceipt";
 import ReceiptsTable from "@/components/ReceiptsTable";
 import SummaryBar from "@/components/SummaryBar";
+import ReliefSummary from "@/components/ReliefSummary";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { downloadCsv } from "@/lib/exportCsv";
 import type { Receipt } from "@/lib/types";
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [year, setYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     fetch("/api/receipts")
@@ -38,19 +42,16 @@ export default function DashboardPage() {
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                Your receipts
+                {t("dashboard.title")}
               </h1>
-              <p className="mt-1 text-sm text-muted">
-                Scan, review and export — synced to your Cloudflare D1
-                database and R2 storage.
-              </p>
+              <p className="mt-1 text-sm text-muted">{t("dashboard.subtitle")}</p>
             </div>
             {receipts.length > 0 && (
               <button
                 onClick={() => downloadCsv(receipts)}
                 className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-surface-2"
               >
-                Export CSV
+                {t("dashboard.export")}
               </button>
             )}
           </div>
@@ -68,7 +69,14 @@ export default function DashboardPage() {
           {loaded && (
             <>
               <div className="mb-6">
-                <SummaryBar receipts={receipts} />
+                <SummaryBar receipts={receipts} year={year} />
+              </div>
+              <div className="mb-6">
+                <ReliefSummary
+                  receipts={receipts}
+                  year={year}
+                  onYearChange={setYear}
+                />
               </div>
               <ReceiptsTable receipts={receipts} onChange={setReceipts} />
             </>

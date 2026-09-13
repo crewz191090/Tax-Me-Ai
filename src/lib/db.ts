@@ -13,8 +13,8 @@ export async function insertReceipt(receipt: Receipt): Promise<void> {
   const env = await getCfEnv();
   await env.DB.prepare(
     `INSERT INTO receipts
-      (id, merchant, date, amount, category, deductible_percent, notes, image_key, is_e_invoice, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (id, merchant, date, amount, category, notes, image_key, is_e_invoice, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       receipt.id,
@@ -22,7 +22,6 @@ export async function insertReceipt(receipt: Receipt): Promise<void> {
       receipt.date,
       receipt.amount,
       receipt.category,
-      receipt.deductiblePercent,
       receipt.notes ?? null,
       receipt.imageKey ?? null,
       receipt.isEInvoice ? 1 : 0,
@@ -33,7 +32,7 @@ export async function insertReceipt(receipt: Receipt): Promise<void> {
 
 export async function updateReceiptFields(
   id: string,
-  updates: Partial<Pick<Receipt, "merchant" | "date" | "amount" | "category" | "deductiblePercent" | "notes">>
+  updates: Partial<Pick<Receipt, "merchant" | "date" | "amount" | "category" | "notes">>
 ): Promise<void> {
   const env = await getCfEnv();
   const fields: string[] = [];
@@ -54,10 +53,6 @@ export async function updateReceiptFields(
   if (updates.category !== undefined) {
     fields.push("category = ?");
     values.push(updates.category);
-  }
-  if (updates.deductiblePercent !== undefined) {
-    fields.push("deductible_percent = ?");
-    values.push(updates.deductiblePercent);
   }
   if (updates.notes !== undefined) {
     fields.push("notes = ?");

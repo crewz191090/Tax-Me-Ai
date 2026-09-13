@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CATEGORIES } from "@/lib/categories";
-import { deductiblePercentForCategory } from "@/lib/categories";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
 import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
@@ -21,6 +21,7 @@ export default function UploadReceipt({
 }: {
   onSaved: (receipt: Receipt) => void;
 }) {
+  const { lang, t } = useLanguage();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -148,10 +149,8 @@ export default function UploadReceipt({
           <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-2xl">
             📷
           </span>
-          <p className="text-sm font-medium">
-            Drop a receipt photo here, or click to upload
-          </p>
-          <p className="mt-1 text-xs text-muted">JPG, PNG or WEBP — up to 10MB</p>
+          <p className="text-sm font-medium">{t("upload.drop")}</p>
+          <p className="mt-1 text-xs text-muted">{t("upload.hint")}</p>
         </div>
       )}
 
@@ -166,7 +165,7 @@ export default function UploadReceipt({
           )}
           <div className="flex items-center gap-2 text-sm text-muted">
             <span className="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-            Reading receipt with AI…
+            {t("upload.scanning")}
           </div>
         </div>
       )}
@@ -178,7 +177,7 @@ export default function UploadReceipt({
             onClick={reset}
             className="rounded-full border border-border px-4 py-2 text-sm hover:bg-surface-2"
           >
-            Try again
+            {t("upload.tryAgain")}
           </button>
         </div>
       )}
@@ -195,11 +194,11 @@ export default function UploadReceipt({
 
           <div className="flex flex-col gap-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-accent">
-              Review extracted details
+              {t("upload.review")}
             </p>
 
             <label className="text-xs text-muted">
-              Merchant
+              {t("upload.merchant")}
               <input
                 value={draft.merchant}
                 onChange={(e) =>
@@ -211,7 +210,7 @@ export default function UploadReceipt({
 
             <div className="grid grid-cols-2 gap-3">
               <label className="text-xs text-muted">
-                Date
+                {t("upload.date")}
                 <input
                   type="date"
                   value={draft.date}
@@ -222,7 +221,7 @@ export default function UploadReceipt({
                 />
               </label>
               <label className="text-xs text-muted">
-                Amount (RM)
+                {t("upload.amount")}
                 <input
                   type="number"
                   step="0.01"
@@ -236,7 +235,7 @@ export default function UploadReceipt({
             </div>
 
             <label className="text-xs text-muted">
-              Category
+              {t("upload.category")}
               <select
                 value={draft.category}
                 onChange={(e) =>
@@ -244,18 +243,20 @@ export default function UploadReceipt({
                 }
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {RELIEF_CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {lang === "bm" ? c.nameBm : c.nameEn}
                   </option>
                 ))}
               </select>
             </label>
 
             <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm">
-              <span className="text-muted">Deductible</span>
+              <span className="text-muted">{t("upload.annualCap")}</span>
               <span className="font-semibold text-accent">
-                {deductiblePercentForCategory(draft.category)}%
+                {getReliefCategory(draft.category).cap > 0
+                  ? `RM ${getReliefCategory(draft.category).cap.toLocaleString()}`
+                  : "—"}
               </span>
             </div>
 
@@ -265,14 +266,14 @@ export default function UploadReceipt({
                 disabled={status === "saving"}
                 className="flex-1 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black hover:bg-accent-strong disabled:opacity-60"
               >
-                {status === "saving" ? "Saving…" : "Save receipt"}
+                {status === "saving" ? t("upload.saving") : t("upload.save")}
               </button>
               <button
                 onClick={reset}
                 disabled={status === "saving"}
                 className="rounded-full border border-border px-4 py-2 text-sm hover:bg-surface-2 disabled:opacity-60"
               >
-                Cancel
+                {t("upload.cancel")}
               </button>
             </div>
           </div>

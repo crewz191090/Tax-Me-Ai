@@ -1,12 +1,9 @@
-import type { Category } from "./categories";
-
 export interface Receipt {
   id: string;
   merchant: string;
   date: string; // ISO yyyy-mm-dd
   amount: number;
-  category: Category | string;
-  deductiblePercent: number;
+  category: string; // ReliefCategory id
   notes?: string;
   imageKey?: string | null;
   isEInvoice: boolean;
@@ -27,7 +24,6 @@ export interface ReceiptRow {
   date: string;
   amount: number;
   category: string;
-  deductible_percent: number;
   notes: string | null;
   image_key: string | null;
   is_e_invoice: number;
@@ -41,7 +37,6 @@ export function rowToReceipt(row: ReceiptRow): Receipt {
     date: row.date,
     amount: row.amount,
     category: row.category,
-    deductiblePercent: row.deductible_percent,
     notes: row.notes ?? undefined,
     imageKey: row.image_key,
     isEInvoice: Boolean(row.is_e_invoice),

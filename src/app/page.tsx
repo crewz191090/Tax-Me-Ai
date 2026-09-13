@@ -1,8 +1,6 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import HowItWorks from "@/components/HowItWorks";
-import Features from "@/components/Features";
-import Testimonials from "@/components/Testimonials";
+import ReliefOverview from "@/components/ReliefOverview";
 import Privacy from "@/components/Privacy";
 import FreeForever from "@/components/FreeForever";
 import CtaSection from "@/components/CtaSection";
@@ -14,9 +12,7 @@ export default function Home() {
       <Header />
       <main className="flex-1">
         <Hero />
-        <HowItWorks />
-        <Features />
-        <Testimonials />
+        <ReliefOverview />
         <Privacy />
         <FreeForever />
         <CtaSection />

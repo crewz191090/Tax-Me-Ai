@@ -4,53 +4,46 @@ import { useEffect, useState } from "react";
 
 const RECEIPTS = [
   {
-    merchant: "Grab Malaysia",
+    merchant: "Klinik Kesihatan",
     date: "15 Jun 2026",
-    amount: "RM 24.50",
-    category: "Transport",
-    deductible: 100,
+    amount: "RM 120.00",
+    category: "Medical (self, spouse, child)",
   },
   {
-    merchant: "Village Park",
+    merchant: "MPH Bookstore",
     date: "14 Jun 2026",
     amount: "RM 68.00",
-    category: "Meals",
-    deductible: 50,
+    category: "Lifestyle",
   },
   {
-    merchant: "Tealive SS2",
+    merchant: "Kedai Runcit",
     date: "14 Jun 2026",
     amount: "RM 23.60",
-    category: "Personal",
-    deductible: 0,
+    category: "Personal (not deductible)",
   },
   {
-    merchant: "Petronas",
+    merchant: "Popular Bookstore",
     date: "13 Jun 2026",
-    amount: "RM 120.00",
-    category: "Fuel",
-    deductible: 100,
+    amount: "RM 45.00",
+    category: "Lifestyle",
   },
   {
-    merchant: "Mr. DIY",
+    merchant: "Tadika Ceria",
     date: "12 Jun 2026",
-    amount: "RM 64.90",
-    category: "Supplies",
-    deductible: 100,
+    amount: "RM 250.00",
+    category: "Childcare / kindergarten fees",
   },
   {
-    merchant: "Shopee Malaysia",
+    merchant: "Prudential",
     date: "11 Jun 2026",
     amount: "RM 212.30",
-    category: "Equipment",
-    deductible: 100,
+    category: "Life insurance & EPF",
   },
 ];
 
-function badgeColor(pct: number) {
-  if (pct === 100) return "bg-accent/15 text-accent";
-  if (pct === 0) return "bg-white/10 text-muted";
-  return "bg-amber-400/15 text-amber-300";
+function badgeColor(category: string) {
+  if (category.includes("not deductible")) return "bg-white/10 text-muted";
+  return "bg-accent/15 text-accent";
 }
 
 export default function ReceiptStack() {
@@ -84,17 +77,16 @@ export default function ReceiptStack() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${badgeColor(
-                    r.deductible
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium leading-tight ${badgeColor(
+                    r.category
                   )}`}
                 >
-                  {r.deductible}%
+                  {r.category}
                 </span>
-                <span className="text-[11px] text-muted">{r.date}</span>
               </div>
               <div className="mb-1 text-sm font-semibold">{r.merchant}</div>
               <div className="mb-3 text-2xl font-bold">{r.amount}</div>
-              <div className="text-[11px] text-muted">{r.category}</div>
+              <div className="text-[11px] text-muted">{r.date}</div>
             </div>
           );
         })}

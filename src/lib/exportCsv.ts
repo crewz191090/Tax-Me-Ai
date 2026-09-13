@@ -1,3 +1,5 @@
+import { claimableForReceipt } from "./reliefCalc";
+import { getReliefCategory } from "./reliefCategories";
 import type { Receipt } from "./types";
 
 function escapeCsvField(value: string | number): string {
@@ -13,21 +15,22 @@ export function receiptsToCsv(receipts: Receipt[]): string {
     "Date",
     "Merchant",
     "Amount (RM)",
-    "Category",
-    "Deductible %",
+    "Relief category",
+    "Category annual cap (RM)",
     "Claimable (RM)",
     "e-Invoice",
     "Notes",
   ];
 
   const rows = receipts.map((r) => {
-    const claimable = (r.amount * r.deductiblePercent) / 100;
+    const category = getReliefCategory(r.category);
+    const claimable = claimableForReceipt(r);
     return [
       r.date,
       r.merchant,
       r.amount.toFixed(2),
-      r.category,
-      `${r.deductiblePercent}%`,
+      category.nameEn,
+      category.cap.toString(),
       claimable.toFixed(2),
       r.isEInvoice ? "Yes" : "No",
       r.notes ?? "",
