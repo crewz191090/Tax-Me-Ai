@@ -11,6 +11,7 @@ import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
 import { extractReceiptLocally } from "@/lib/localOcr";
 import { addPendingReceipt } from "@/lib/offlineQueue";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
+import GlassCalculator from "./GlassCalculator";
 import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
@@ -79,9 +80,7 @@ export default function UploadReceipt({
   const [source, setSource] = useState<Source>(null);
   const [showMore, setShowMore] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [splitEnabled, setSplitEnabled] = useState(false);
-  const [splitTotal, setSplitTotal] = useState("");
-  const [splitPeople, setSplitPeople] = useState("2");
+  const [showCalculator, setShowCalculator] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
@@ -299,23 +298,8 @@ export default function UploadReceipt({
     setSource(null);
     setShowMore(false);
     setValidationError(null);
-    setSplitEnabled(false);
-    setSplitTotal("");
-    setSplitPeople("2");
+    setShowCalculator(false);
     if (inputRef.current) inputRef.current.value = "";
-  }
-
-  const splitShare =
-    splitTotal && Number(splitPeople) > 0 ? Number(splitTotal) / Number(splitPeople) : 0;
-
-  function applySplit(totalStr: string, peopleStr: string) {
-    const total = Number(totalStr);
-    const people = Number(peopleStr);
-    if (total > 0 && people > 0) {
-      const share = Math.round((total / people) * 100) / 100;
-      setDraft((prev) => (prev ? { ...prev, amount: share } : prev));
-      setAmountText(share.toFixed(2));
-    }
   }
 
   return (
@@ -533,10 +517,10 @@ export default function UploadReceipt({
                   />
                   <button
                     type="button"
-                    onClick={() => setSplitEnabled((v) => !v)}
+                    onClick={() => setShowCalculator((v) => !v)}
                     title={t("upload.splitEnable")}
                     className={`absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full px-1 py-0.5 text-xs transition-colors ${
-                      splitEnabled ? "bg-accent/20 text-accent" : "text-muted hover:text-foreground"
+                      showCalculator ? "bg-accent/20 text-accent" : "text-muted hover:text-foreground"
                     }`}
                   >
                     🧮
@@ -545,42 +529,15 @@ export default function UploadReceipt({
               </label>
             </div>
 
-            {splitEnabled && (
-              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-surface-2/50 p-3">
-                <label className="text-xs text-muted">
-                  {t("upload.splitTotal")}
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={splitTotal}
-                    onChange={(e) => {
-                      setSplitTotal(e.target.value);
-                      applySplit(e.target.value, splitPeople);
-                    }}
-                    onFocus={(e) => e.target.select()}
-                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-                  />
-                </label>
-                <label className="text-xs text-muted">
-                  {t("upload.splitPeople")}
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={splitPeople}
-                    onChange={(e) => {
-                      setSplitPeople(e.target.value);
-                      applySplit(splitTotal, e.target.value);
-                    }}
-                    onFocus={(e) => e.target.select()}
-                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-                  />
-                </label>
-                <div className="col-span-2 flex items-center justify-between rounded-lg bg-surface px-3 py-2 text-xs">
-                  <span className="text-muted">{t("upload.splitShare")}</span>
-                  <span className="font-semibold text-accent">RM {splitShare.toFixed(2)}</span>
-                </div>
-              </div>
+            {showCalculator && (
+              <GlassCalculator
+                initial={draft.amount}
+                onChange={(value) => {
+                  setDraft((prev) => (prev ? { ...prev, amount: value } : prev));
+                  setAmountText(value.toFixed(2));
+                }}
+                onClose={() => setShowCalculator(false)}
+              />
             )}
 
             <div className="grid grid-cols-2 gap-3">
