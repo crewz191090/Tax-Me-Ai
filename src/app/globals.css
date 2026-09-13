@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #08090a;
-  --surface: #101214;
-  --surface-2: #16181b;
-  --border: #24272b;
-  --foreground: #f2f4f3;
-  --muted: #9aa0a6;
-  --accent: #34d399;
-  --accent-strong: #10b981;
+  --background: #05070a;
+  --surface: #0b0f14;
+  --surface-2: #11161d;
+  --border: #1c232c;
+  --foreground: #eef2f6;
+  --muted: #7c8896;
+  --accent: #22d3ee;
+  --accent-strong: #38bdf8;
+  --accent-2: #6366f1;
 }
 
 @theme inline {
@@ -20,6 +21,7 @@
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-2: var(--accent-2);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -33,17 +35,51 @@ body {
   color: var(--foreground);
 }
 
+/* Fine 1px grid, subtle — the "engineered" futuristic backdrop */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
 .bg-radial-glow {
-  background: radial-gradient(
-    60% 60% at 80% 20%,
-    rgba(52, 211, 153, 0.18) 0%,
-    rgba(8, 9, 10, 0) 70%
-  );
+  background:
+    radial-gradient(48% 42% at 82% 8%, rgba(34, 211, 238, 0.16) 0%, rgba(5, 7, 10, 0) 70%),
+    radial-gradient(38% 32% at 8% 92%, rgba(99, 102, 241, 0.12) 0%, rgba(5, 7, 10, 0) 70%);
 }
 
 .text-gradient {
-  background: linear-gradient(90deg, #34d399, #6ee7b7);
+  background: linear-gradient(90deg, #22d3ee, #6366f1);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.glass {
+  background: rgba(17, 22, 29, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.glow-border {
+  position: relative;
+}
+
+.glow-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.5), rgba(99, 102, 241, 0.15), transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.font-mono-tight {
+  font-family: var(--font-geist-mono);
+  letter-spacing: -0.01em;
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { insertReceipt, listReceipts, newReceiptId } from "@/lib/db";
 import { uploadReceiptImage } from "@/lib/storage";
 import { RELIEF_CATEGORY_IDS } from "@/lib/reliefCategories";
+import { getSessionUser } from "@/lib/auth/session";
 import type { Receipt } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -10,8 +11,13 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export async function GET() {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
   try {
-    const receipts = await listReceipts();
+    const receipts = await listReceipts(user.id);
     return NextResponse.json({ receipts });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -20,6 +26,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
 
@@ -58,7 +69,7 @@ export async function POST(req: NextRequest) {
       }
 
       const ext = file.type.split("/")[1] ?? "jpg";
-      imageKey = `receipts/${id}.${ext}`;
+      imageKey = `receipts/${user.id}/${id}.${ext}`;
       const buffer = await file.arrayBuffer();
       await uploadReceiptImage({
         key: imageKey,
@@ -78,7 +89,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    await insertReceipt(receipt);
+    await insertReceipt(user.id, receipt);
 
     return NextResponse.json({ receipt }, { status: 201 });
   } catch (err) {

@@ -1,23 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import UploadReceipt from "@/components/UploadReceipt";
 import ReceiptsTable from "@/components/ReceiptsTable";
 import SummaryBar from "@/components/SummaryBar";
 import ReliefSummary from "@/components/ReliefSummary";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { downloadCsv } from "@/lib/exportCsv";
 import type { Receipt } from "@/lib/types";
 
 export default function DashboardPage() {
   const { t } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [year, setYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+
     fetch("/api/receipts")
       .then((res) => res.json() as Promise<{ receipts?: Receipt[]; error?: string }>)
       .then((json) => {
@@ -28,16 +39,27 @@ export default function DashboardPage() {
         setLoadError(err instanceof Error ? err.message : "Failed to load receipts.")
       )
       .finally(() => setLoaded(true));
-  }, []);
+  }, [authLoading, user, router]);
 
   function handleSaved(receipt: Receipt) {
     setReceipts((prev) => [receipt, ...prev]);
   }
 
+  if (authLoading || !user) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 bg-grid">
         <div className="mx-auto max-w-5xl px-6 py-12">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>

@@ -20,7 +20,7 @@ export default function ReliefSummary({
   const rowsWithSpend = summary.rows.filter((r) => r.spent > 0);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <div className="glow-border rounded-xl border border-border bg-surface p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">{t("dashboard.reliefSummary")}</h2>
         <div className="flex items-center gap-2 text-xs text-muted">
@@ -51,7 +51,7 @@ export default function ReliefSummary({
                   <span className="font-medium">
                     {lang === "bm" ? row.nameBm : row.nameEn}
                   </span>
-                  <span className="text-muted">
+                  <span className="font-mono-tight text-muted">
                     RM {row.spent.toFixed(2)} / RM {row.cap.toLocaleString()}
                   </span>
                 </div>
@@ -69,7 +69,7 @@ export default function ReliefSummary({
 
       <div className="mt-6 flex items-center justify-between rounded-xl bg-surface-2 px-4 py-3">
         <span className="text-sm text-muted">{t("dashboard.totalClaimable")}</span>
-        <span className="text-lg font-bold text-accent">
+        <span className="font-mono-tight text-lg font-bold text-accent">
           RM {summary.totalClaimable.toFixed(2)}
         </span>
       </div>

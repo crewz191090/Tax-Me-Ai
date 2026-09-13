@@ -22,13 +22,13 @@ export default function ReliefOverview() {
           {categories.map((category) => (
             <div
               key={category.id}
-              className="rounded-2xl border border-border bg-surface p-5"
+              className="glow-border rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent/40"
             >
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-sm font-semibold">
                   {lang === "bm" ? category.nameBm : category.nameEn}
                 </h3>
-                <span className="whitespace-nowrap rounded-full bg-accent/15 px-2.5 py-1 text-xs font-medium text-accent">
+                <span className="font-mono-tight whitespace-nowrap rounded-full bg-accent/15 px-2.5 py-1 text-xs font-medium text-accent">
                   RM {category.cap.toLocaleString()}
                 </span>
               </div>

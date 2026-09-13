@@ -1,9 +1,11 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 export default function FreeForever() {
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   const items = [
     t("free.item1"),
@@ -24,7 +26,7 @@ export default function FreeForever() {
         </h2>
         <p className="mt-4 text-muted">{t("free.subtitle")}</p>
 
-        <div className="mt-10 grid gap-3 rounded-2xl border border-border bg-surface p-6 text-left sm:grid-cols-2">
+        <div className="glow-border mt-10 grid gap-3 rounded-2xl border border-border bg-surface p-6 text-left sm:grid-cols-2">
           {items.map((item) => (
             <div key={item} className="flex items-start gap-2 text-sm">
               <span className="mt-0.5 text-accent">✓</span>
@@ -34,7 +36,7 @@ export default function FreeForever() {
         </div>
 
         <a
-          href="/dashboard"
+          href={user ? "/dashboard" : "/register"}
           className="mt-8 inline-block rounded-full bg-accent px-8 py-3 text-sm font-semibold text-black transition-colors hover:bg-accent-strong"
         >
           {t("free.cta")}

@@ -1,16 +1,18 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAuth } from "@/lib/auth/AuthContext";
 import ReceiptStack from "./ReceiptStack";
 
 export default function Hero() {
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   return (
-    <section id="top" className="relative overflow-hidden bg-radial-glow">
+    <section id="top" className="relative overflow-hidden bg-grid bg-radial-glow">
       <div className="mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-16 md:grid-cols-2 md:items-center md:pt-24">
         <div>
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted">
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 font-mono-tight text-xs text-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
             {t("hero.badge")}
           </span>
@@ -25,7 +27,7 @@ export default function Hero() {
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <a
-              href="/dashboard"
+              href={user ? "/dashboard" : "/register"}
               className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-accent-strong"
             >
               {t("hero.cta")}

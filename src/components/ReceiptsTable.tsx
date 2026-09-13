@@ -89,7 +89,7 @@ export default function ReceiptsTable({
                     )}
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3">
+                <td className="font-mono-tight whitespace-nowrap px-4 py-3">
                   RM {r.amount.toFixed(2)}
                 </td>
                 <td className="px-4 py-3">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { deleteReceiptById, updateReceiptFields } from "@/lib/db";
 import { RELIEF_CATEGORY_IDS } from "@/lib/reliefCategories";
 import { deleteReceiptImage } from "@/lib/storage";
+import { getSessionUser } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
     const body = (await req.json()) as {
@@ -28,7 +34,7 @@ export async function PATCH(
     }
     if (typeof body.notes === "string") updates.notes = body.notes;
 
-    await updateReceiptFields(id, updates);
+    await updateReceiptFields(user.id, id, updates);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -41,9 +47,14 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
-    const imageKey = await deleteReceiptById(id);
+    const imageKey = await deleteReceiptById(user.id, id);
     if (imageKey) {
       await deleteReceiptImage(imageKey);
     }
