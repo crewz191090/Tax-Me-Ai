@@ -181,6 +181,7 @@ export const translations = {
     "table.empty": "No receipts yet. Upload your first one above.",
     "table.delete": "Delete",
     "table.deleting": "Deleting…",
+    "table.editDate": "Click to edit date",
 
     "summary.totalReceipts": "Total receipts",
     "summary.totalSpent": "Total spent",
@@ -395,6 +396,7 @@ export const translations = {
     "table.empty": "Belum ada resit. Muat naik yang pertama di atas.",
     "table.delete": "Padam",
     "table.deleting": "Memadam…",
+    "table.editDate": "Klik untuk edit tarikh",
 
     "summary.totalReceipts": "Jumlah resit",
     "summary.totalSpent": "Jumlah perbelanjaan",

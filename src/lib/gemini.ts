@@ -104,7 +104,7 @@ export async function extractReceiptFromImage(params: {
       },
     },
     {
-      text: `You are reading a Malaysian receipt or invoice for a personal expense tracker. Extract the merchant name, transaction date, and total amount. Classify the expense into the single best-matching general category id from this list:\n\n${MAIN_CATEGORY_GUIDE}\n\nSeparately, check whether this expense also qualifies for a specific LHDN individual income tax relief category (Year of Assessment 2025). If it clearly matches one of these, return its id; otherwise return "none":\n\n${RELIEF_GUIDE}\n\nIf it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
+      text: `You are reading a Malaysian receipt or invoice for a personal expense tracker. Extract the merchant name, transaction date, and total amount. The date must come only from what is printed on the receipt itself (e.g. a date/time line, transaction timestamp, or invoice date) — if no date is legible anywhere on the receipt, return an empty string for date rather than guessing a year. Classify the expense into the single best-matching general category id from this list:\n\n${MAIN_CATEGORY_GUIDE}\n\nSeparately, check whether this expense also qualifies for a specific LHDN individual income tax relief category. If it clearly matches one of these, return its id; otherwise return "none":\n\n${RELIEF_GUIDE}\n\nIf it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
     },
   ]);
 

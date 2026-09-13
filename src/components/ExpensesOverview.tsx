@@ -33,8 +33,9 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
   const [month, setMonth] = useState(currentMonth);
 
   const availableYears = useMemo(() => {
-    const years = yearsWithReceipts(receipts);
-    return years.length > 0 ? years : [currentYear];
+    const years = new Set(yearsWithReceipts(receipts));
+    years.add(currentYear);
+    return Array.from(years).sort((a, b) => b - a);
   }, [receipts]);
 
   const breakdown = useMemo(() => {

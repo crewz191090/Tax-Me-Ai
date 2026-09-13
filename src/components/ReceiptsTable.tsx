@@ -21,6 +21,7 @@ export default function ReceiptsTable({
 }) {
   const { lang, t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
 
@@ -35,6 +36,17 @@ export default function ReceiptsTable({
     } finally {
       setPendingId(null);
     }
+  }
+
+  async function handleDateChange(id: string, date: string) {
+    if (!date) return;
+    const res = await fetch(`/api/receipts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date }),
+    });
+    if (!res.ok) return;
+    onChange(receipts.map((r) => (r.id === id ? { ...r, date } : r)));
   }
 
   async function handleSubcategoryChange(id: string, subcategory: string) {
@@ -97,7 +109,32 @@ export default function ReceiptsTable({
                       </span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-muted">{r.date}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-muted">
+                    {editingDateId === r.id ? (
+                      <input
+                        type="date"
+                        defaultValue={r.date}
+                        autoFocus
+                        onBlur={(e) => {
+                          handleDateChange(r.id, e.target.value);
+                          setEditingDateId(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                          if (e.key === "Escape") setEditingDateId(null);
+                        }}
+                        className="rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-foreground outline-none focus:border-accent"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setEditingDateId(r.id)}
+                        className="rounded-lg px-1.5 py-0.5 hover:bg-surface-2"
+                        title={t("table.editDate")}
+                      >
+                        {r.date}
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-medium">
                     <div className="flex flex-wrap items-center gap-2">
                       {r.merchant}

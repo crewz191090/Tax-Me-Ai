@@ -14,8 +14,9 @@ export default function ReliefSummary({
   onYearChange: (year: number) => void;
 }) {
   const { lang, t } = useLanguage();
-  const years = yearsWithReceipts(receipts);
-  const availableYears = years.length > 0 ? years : [year];
+  const years = new Set(yearsWithReceipts(receipts));
+  years.add(year);
+  const availableYears = Array.from(years).sort((a, b) => b - a);
   const summary = computeReliefSummary(receipts, year);
   const rowsWithSpend = summary.rows.filter((r) => r.spent > 0);
 
