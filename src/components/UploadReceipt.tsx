@@ -440,7 +440,7 @@ export default function UploadReceipt({
       )}
 
       {(status === "review" || status === "saving") && draft && (
-        <div className="relative grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {preview ? (
             <img
               src={preview}
@@ -454,7 +454,7 @@ export default function UploadReceipt({
             </div>
           )}
 
-          <div className="flex flex-col gap-3">
+          <div className="relative flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-wide text-accent">
                 {t("upload.review")}

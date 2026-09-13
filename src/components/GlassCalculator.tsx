@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Operator = "+" | "-" | "×" | "÷";
@@ -45,6 +45,7 @@ export default function GlassCalculator({
   onClose: () => void;
 }) {
   const { t } = useLanguage();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(
     initial && initial > 0 ? trimNumber(initial) : "0"
   );
@@ -136,9 +137,18 @@ export default function GlassCalculator({
     emit(next);
   }
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
   return (
-    <div className="glass-calc-overlay" onClick={onClose}>
-    <div className="glass-calc" onClick={(e) => e.stopPropagation()}>
+    <div ref={rootRef} className="glass-calc">
       <div className="glass-calc-header">
         <span>{t("upload.calculatorTitle")}</span>
         <button type="button" onClick={onClose} className="glass-calc-close" aria-label="Close">
@@ -233,7 +243,6 @@ export default function GlassCalculator({
           =
         </button>
       </div>
-    </div>
     </div>
   );
 }
