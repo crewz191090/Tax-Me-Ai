@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import UploadReceipt from "@/components/UploadReceipt";
+import CloneExpenses from "@/components/CloneExpenses";
 import ReceiptsTable from "@/components/ReceiptsTable";
 import SummaryBar from "@/components/SummaryBar";
 import ReliefSummary from "@/components/ReliefSummary";
@@ -17,7 +18,12 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import { downloadCsv } from "@/lib/exportCsv";
-import { getPendingReceipts, syncPendingReceipts } from "@/lib/offlineQueue";
+import {
+  clearPendingReceipts,
+  getPendingReceipts,
+  syncPendingReceipts,
+  type SyncFailure,
+} from "@/lib/offlineQueue";
 import type { IncomeEntry, Receipt } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -33,6 +39,7 @@ export default function DashboardPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [syncErrors, setSyncErrors] = useState<SyncFailure[]>([]);
 
   const refreshReceipts = useCallback(() => {
     return fetch("/api/receipts")
@@ -59,13 +66,20 @@ export default function DashboardPage() {
   const runSync = useCallback(async () => {
     setSyncing(true);
     try {
-      await syncPendingReceipts();
+      const result = await syncPendingReceipts();
+      setSyncErrors(result.failures);
       await refreshReceipts();
     } finally {
       await refreshPendingCount();
       setSyncing(false);
     }
   }, [refreshReceipts, refreshPendingCount]);
+
+  async function handleDiscardFailed() {
+    await clearPendingReceipts();
+    setSyncErrors([]);
+    await refreshPendingCount();
+  }
 
   useEffect(() => {
     if (authLoading) return;
@@ -130,12 +144,20 @@ export default function DashboardPage() {
           <SyncStatusBanner
             pendingCount={pendingCount}
             syncing={syncing}
+            syncErrors={syncErrors}
             onSyncNow={runSync}
+            onDiscardFailed={handleDiscardFailed}
           />
 
           <div className="mb-8">
             <UploadReceipt onSaved={handleSaved} onQueued={handleQueued} />
           </div>
+
+          {loaded && (
+            <div className="mb-8">
+              <CloneExpenses receipts={receipts} onCloned={handleSaved} />
+            </div>
+          )}
 
           {loadError && (
             <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">

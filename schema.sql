@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS receipts (
   notes TEXT,
   image_key TEXT,
   is_e_invoice INTEGER NOT NULL DEFAULT 0,
+  loan_tenure_months INTEGER,
+  loan_month_index INTEGER,
   created_at TEXT NOT NULL
 );
 

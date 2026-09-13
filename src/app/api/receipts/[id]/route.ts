@@ -38,6 +38,8 @@ export async function PATCH(
       isRecurring?: boolean;
       location?: string | null;
       notes?: string;
+      loanTenureMonths?: number | null;
+      loanMonthIndex?: number | null;
     };
 
     const updates: Partial<
@@ -56,6 +58,8 @@ export async function PATCH(
         | "isRecurring"
         | "location"
         | "notes"
+        | "loanTenureMonths"
+        | "loanMonthIndex"
       >
     > = {};
     if (typeof body.merchant === "string") updates.merchant = body.merchant;
@@ -79,6 +83,8 @@ export async function PATCH(
     if (typeof body.isRecurring === "boolean") updates.isRecurring = body.isRecurring;
     if (body.location !== undefined) updates.location = body.location;
     if (typeof body.notes === "string") updates.notes = body.notes;
+    if (body.loanTenureMonths !== undefined) updates.loanTenureMonths = body.loanTenureMonths;
+    if (body.loanMonthIndex !== undefined) updates.loanMonthIndex = body.loanMonthIndex;
 
     await updateReceiptFields(user.id, id, updates);
 

@@ -18,6 +18,7 @@ export interface PendingReceipt {
   isRecurring: boolean;
   location: string;
   isEInvoice: boolean;
+  loanTenureMonths: number | null;
   imageDataUrl: string | null;
   imageType: string | null;
   createdAt: string;
@@ -46,6 +47,10 @@ export async function removePendingReceipt(localId: string): Promise<void> {
   await set(QUEUE_KEY, queue.filter((r) => r.localId !== localId));
 }
 
+export async function clearPendingReceipts(): Promise<void> {
+  await set(QUEUE_KEY, []);
+}
+
 function dataUrlToFile(dataUrl: string, mimeType: string, filename: string): File {
   const base64 = dataUrl.split(",")[1] ?? dataUrl;
   const binary = atob(base64);
@@ -54,10 +59,20 @@ function dataUrlToFile(dataUrl: string, mimeType: string, filename: string): Fil
   return new File([bytes], filename, { type: mimeType });
 }
 
-export async function syncPendingReceipts(): Promise<{ synced: number; failed: number }> {
+export interface SyncFailure {
+  localId: string;
+  merchant: string;
+  message: string;
+}
+
+export async function syncPendingReceipts(): Promise<{
+  synced: number;
+  failed: number;
+  failures: SyncFailure[];
+}> {
   const queue = await getPendingReceipts();
   let synced = 0;
-  let failed = 0;
+  const failures: SyncFailure[] = [];
 
   for (const item of queue) {
     try {
@@ -74,6 +89,7 @@ export async function syncPendingReceipts(): Promise<{ synced: number; failed: n
       if (item.tags) formData.append("tags", item.tags);
       formData.append("isRecurring", String(item.isRecurring));
       if (item.location) formData.append("location", item.location);
+      if (item.loanTenureMonths) formData.append("loanTenureMonths", String(item.loanTenureMonths));
       if (item.imageDataUrl && item.imageType) {
         formData.append("file", dataUrlToFile(item.imageDataUrl, item.imageType, "receipt.jpg"));
       }
@@ -83,15 +99,23 @@ export async function syncPendingReceipts(): Promise<{ synced: number; failed: n
         await removePendingReceipt(item.localId);
         synced++;
       } else {
-        failed++;
+        // The server was reachable and rejected this specific item (bad
+        // data, expired session, etc.) — it will keep failing the same way
+        // on every retry, so surface it instead of leaving it silently
+        // stuck as "waiting to sync" forever.
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        failures.push({
+          localId: item.localId,
+          merchant: item.merchant,
+          message: json.error || `Server rejected this item (${res.status}).`,
+        });
       }
     } catch {
-      failed++;
       // Network still down (or flaky) — leave it queued and stop trying
       // the rest this round; the next online event will retry everything.
       break;
     }
   }
 
-  return { synced, failed };
+  return { synced, failed: failures.length, failures };
 }

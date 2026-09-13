@@ -17,6 +17,8 @@ export interface Receipt {
   notes?: string;
   imageKey?: string | null;
   isEInvoice: boolean;
+  loanTenureMonths?: number | null;
+  loanMonthIndex?: number | null;
   createdAt: string;
 }
 
@@ -55,6 +57,8 @@ export interface ReceiptRow {
   notes: string | null;
   image_key: string | null;
   is_e_invoice: number;
+  loan_tenure_months: number | null;
+  loan_month_index: number | null;
   created_at: string;
 }
 
@@ -76,6 +80,8 @@ export function rowToReceipt(row: ReceiptRow): Receipt {
     notes: row.notes ?? undefined,
     imageKey: row.image_key,
     isEInvoice: Boolean(row.is_e_invoice),
+    loanTenureMonths: row.loan_tenure_months,
+    loanMonthIndex: row.loan_month_index,
     createdAt: row.created_at,
   };
 }

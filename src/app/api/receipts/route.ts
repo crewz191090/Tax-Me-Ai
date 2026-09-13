@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const TRANSACTION_TYPES: TransactionType[] = ["expense", "income", "transfer"];
+const LOAN_TENURE_MONTHS = [1, 3, 6, 12, 24, 36];
 
 export async function GET() {
   const user = await getSessionUser();
@@ -70,6 +71,18 @@ export async function POST(req: NextRequest) {
     const notes = formData.get("notes");
     const file = formData.get("file");
 
+    const rawLoanTenure = formData.get("loanTenureMonths");
+    const loanTenureMonths =
+      typeof rawLoanTenure === "string" && LOAN_TENURE_MONTHS.includes(Number(rawLoanTenure))
+        ? Number(rawLoanTenure)
+        : null;
+    const rawLoanMonthIndex = formData.get("loanMonthIndex");
+    const loanMonthIndex = loanTenureMonths
+      ? typeof rawLoanMonthIndex === "string" && Number(rawLoanMonthIndex) > 0
+        ? Number(rawLoanMonthIndex)
+        : 1
+      : null;
+
     if (!merchant || !date || Number.isNaN(amount)) {
       return NextResponse.json(
         { error: "Missing required fields: merchant, date, amount." },
@@ -121,6 +134,8 @@ export async function POST(req: NextRequest) {
       notes: typeof notes === "string" ? notes : undefined,
       imageKey,
       isEInvoice,
+      loanTenureMonths,
+      loanMonthIndex,
       createdAt: new Date().toISOString(),
     };
 

@@ -150,9 +150,14 @@ export default function ReceiptsTable({
                           e-Invoice
                         </span>
                       )}
-                      {r.isRecurring && (
+                      {r.isRecurring && !r.loanTenureMonths && (
                         <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-muted">
                           ↻
+                        </span>
+                      )}
+                      {r.loanTenureMonths && (
+                        <span className="rounded-full bg-indigo-400/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
+                          {r.loanMonthIndex ?? 1}/{r.loanTenureMonths}
                         </span>
                       )}
                     </div>

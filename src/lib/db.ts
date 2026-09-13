@@ -17,8 +17,8 @@ export async function insertReceipt(userId: string, receipt: Receipt): Promise<v
     `INSERT INTO receipts
       (id, user_id, merchant, date, amount, main_category, subcategory, relief_category,
        type, payment_method, account_name, tags, is_recurring, location,
-       notes, image_key, is_e_invoice, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       notes, image_key, is_e_invoice, loan_tenure_months, loan_month_index, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       receipt.id,
@@ -38,6 +38,8 @@ export async function insertReceipt(userId: string, receipt: Receipt): Promise<v
       receipt.notes ?? null,
       receipt.imageKey ?? null,
       receipt.isEInvoice ? 1 : 0,
+      receipt.loanTenureMonths ?? null,
+      receipt.loanMonthIndex ?? null,
       receipt.createdAt
     )
     .run();
@@ -62,6 +64,8 @@ export async function updateReceiptFields(
       | "isRecurring"
       | "location"
       | "notes"
+      | "loanTenureMonths"
+      | "loanMonthIndex"
     >
   >
 ): Promise<void> {
@@ -83,6 +87,8 @@ export async function updateReceiptFields(
     isRecurring: "is_recurring",
     location: "location",
     notes: "notes",
+    loanTenureMonths: "loan_tenure_months",
+    loanMonthIndex: "loan_month_index",
   };
 
   for (const [key, column] of Object.entries(columnMap)) {

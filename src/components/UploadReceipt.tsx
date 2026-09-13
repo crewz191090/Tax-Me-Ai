@@ -16,6 +16,8 @@ import type { ExtractedReceipt, Receipt } from "@/lib/types";
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
 type Source = "ai" | "local" | "manual" | null;
 
+const LOAN_TENURE_OPTIONS = [1, 3, 6, 12, 24, 36];
+
 interface Draft {
   merchant: string;
   date: string;
@@ -29,6 +31,7 @@ interface Draft {
   tags: string;
   isRecurring: boolean;
   location: string;
+  loanTenureMonths: number | null;
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -54,6 +57,7 @@ function draftFromExtracted(extracted: ExtractedReceipt): Draft {
     tags: "",
     isRecurring: false,
     location: "",
+    loanTenureMonths: null,
   };
 }
 
@@ -74,7 +78,9 @@ export default function UploadReceipt({
   const [source, setSource] = useState<Source>(null);
   const [showMore, setShowMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
+  const manualCameraInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
   async function handleFile(selectedFile: File) {
@@ -143,6 +149,7 @@ export default function UploadReceipt({
       tags: "",
       isRecurring: false,
       location: "",
+      loanTenureMonths: null,
     });
     setSource("manual");
     setStatus("review");
@@ -160,62 +167,88 @@ export default function UploadReceipt({
     if (dropped) handleFile(dropped);
   }
 
+  async function buildFormData(): Promise<FormData> {
+    if (!draft) throw new Error("No draft to save.");
+    const formData = new FormData();
+    formData.append("merchant", draft.merchant);
+    formData.append("date", draft.date);
+    formData.append("amount", String(draft.amount));
+    formData.append("subcategory", draft.subcategory);
+    if (draft.reliefCategory) formData.append("reliefCategory", draft.reliefCategory);
+    formData.append("type", draft.type);
+    formData.append("isEInvoice", String(draft.isEInvoice));
+    if (draft.paymentMethod) formData.append("paymentMethod", draft.paymentMethod);
+    if (draft.accountName) formData.append("accountName", draft.accountName);
+    if (draft.tags) formData.append("tags", draft.tags);
+    formData.append("isRecurring", String(draft.isRecurring));
+    if (draft.location) formData.append("location", draft.location);
+    if (draft.loanTenureMonths) formData.append("loanTenureMonths", String(draft.loanTenureMonths));
+    if (file) formData.append("file", file);
+    return formData;
+  }
+
+  async function queueForLaterSync() {
+    if (!draft) return;
+    try {
+      await addPendingReceipt({
+        merchant: draft.merchant,
+        date: draft.date,
+        amount: draft.amount,
+        subcategory: draft.subcategory,
+        reliefCategory: draft.reliefCategory,
+        type: draft.type,
+        paymentMethod: draft.paymentMethod,
+        accountName: draft.accountName,
+        tags: draft.tags,
+        isRecurring: draft.isRecurring,
+        location: draft.location,
+        isEInvoice: draft.isEInvoice,
+        loanTenureMonths: draft.loanTenureMonths,
+        imageDataUrl: preview,
+        imageType: file?.type ?? null,
+      });
+      onQueued?.();
+      reset();
+    } catch (queueErr) {
+      setError(queueErr instanceof Error ? queueErr.message : "Failed to save receipt.");
+      setStatus("error");
+    }
+  }
+
   async function handleSave() {
     if (!draft) return;
     setStatus("saving");
     setError(null);
 
+    // Genuinely offline — no point attempting the request, queue straight away.
+    if (!online) {
+      await queueForLaterSync();
+      return;
+    }
+
     try {
-      const formData = new FormData();
-      formData.append("merchant", draft.merchant);
-      formData.append("date", draft.date);
-      formData.append("amount", String(draft.amount));
-      formData.append("subcategory", draft.subcategory);
-      if (draft.reliefCategory) formData.append("reliefCategory", draft.reliefCategory);
-      formData.append("type", draft.type);
-      formData.append("isEInvoice", String(draft.isEInvoice));
-      if (draft.paymentMethod) formData.append("paymentMethod", draft.paymentMethod);
-      if (draft.accountName) formData.append("accountName", draft.accountName);
-      if (draft.tags) formData.append("tags", draft.tags);
-      formData.append("isRecurring", String(draft.isRecurring));
-      if (draft.location) formData.append("location", draft.location);
-      if (file) formData.append("file", file);
-
+      const formData = await buildFormData();
       const res = await fetch("/api/receipts", { method: "POST", body: formData });
-      const json = (await res.json()) as { receipt?: Receipt; error?: string };
 
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to save receipt.");
-      }
-
-      onSaved(json.receipt as Receipt);
-      reset();
-    } catch {
-      // Network (or server) unreachable — queue it locally instead of
-      // losing the scan; it will sync automatically once back online.
-      try {
-        await addPendingReceipt({
-          merchant: draft.merchant,
-          date: draft.date,
-          amount: draft.amount,
-          subcategory: draft.subcategory,
-          reliefCategory: draft.reliefCategory,
-          type: draft.type,
-          paymentMethod: draft.paymentMethod,
-          accountName: draft.accountName,
-          tags: draft.tags,
-          isRecurring: draft.isRecurring,
-          location: draft.location,
-          isEInvoice: draft.isEInvoice,
-          imageDataUrl: preview,
-          imageType: file?.type ?? null,
-        });
-        onQueued?.();
+      if (res.ok) {
+        const json = (await res.json()) as { receipt: Receipt };
+        onSaved(json.receipt);
         reset();
-      } catch (queueErr) {
-        setError(queueErr instanceof Error ? queueErr.message : "Failed to save receipt.");
-        setStatus("error");
+        return;
       }
+
+      // The server was reachable and responded — this is a real error
+      // (validation, auth, quota, etc.), not a connectivity problem, so
+      // surface it instead of silently misfiling it as "offline, will
+      // sync later" where it would just fail again on every retry.
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(json.error || "Failed to save receipt.");
+      setStatus("error");
+    } catch {
+      // fetch() itself threw — the request never reached the server
+      // (connection dropped, DNS failure, etc.), so this is the one case
+      // worth queuing for automatic retry once back online.
+      await queueForLaterSync();
     }
   }
 
@@ -240,9 +273,25 @@ export default function UploadReceipt({
         onChange={onInputChange}
       />
       <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        className="hidden"
+        onChange={onInputChange}
+      />
+      <input
         ref={manualInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={onManualInputChange}
+      />
+      <input
+        ref={manualCameraInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
         className="hidden"
         onChange={onManualInputChange}
       />
@@ -250,17 +299,16 @@ export default function UploadReceipt({
       {status === "idle" && (
         <>
           <div
-            onClick={() => inputRef.current?.click()}
             onDragOver={(e) => {
               e.preventDefault();
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
+            className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
               dragOver
                 ? "border-accent bg-accent/5"
-                : "border-border hover:border-accent/50"
+                : "border-border"
             }`}
           >
             <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-2xl">
@@ -268,18 +316,46 @@ export default function UploadReceipt({
             </span>
             <p className="text-sm font-medium">{t("upload.drop")}</p>
             <p className="mt-1 text-xs text-muted">{t("upload.hint")}</p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="btn-pill btn-pill-outline btn-pill-sm"
+              >
+                🖼️ {t("upload.chooseGallery")}
+              </button>
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="btn-pill btn-pill-outline btn-pill-sm"
+              >
+                📷 {t("upload.takePhoto")}
+              </button>
+            </div>
             {!online && (
               <p className="mt-2 text-xs text-amber-300">{t("upload.offlineNotice")}</p>
             )}
           </div>
           <div className="mt-4 flex flex-col items-center gap-2 text-center">
-            <button
-              type="button"
-              onClick={() => manualInputRef.current?.click()}
-              className="btn-pill btn-pill-outline btn-pill-sm"
-            >
-              ✍️ {t("upload.manualAdd")}
-            </button>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              {t("upload.manualAdd")}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => manualInputRef.current?.click()}
+                className="btn-pill btn-pill-outline btn-pill-sm"
+              >
+                🖼️ {t("upload.chooseGallery")}
+              </button>
+              <button
+                type="button"
+                onClick={() => manualCameraInputRef.current?.click()}
+                className="btn-pill btn-pill-outline btn-pill-sm"
+              >
+                📷 {t("upload.takePhoto")}
+              </button>
+            </div>
             <p className="max-w-sm text-xs text-muted">{t("upload.manualHint")}</p>
           </div>
         </>
@@ -304,10 +380,7 @@ export default function UploadReceipt({
       {status === "error" && (
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <p className="text-sm text-red-400">{error}</p>
-          <button
-            onClick={reset}
-            className="rounded-full border border-border px-4 py-2 text-sm hover:bg-surface-2"
-          >
+          <button onClick={reset} className="btn-pill btn-pill-outline">
             {t("upload.tryAgain")}
           </button>
         </div>
@@ -522,6 +595,28 @@ export default function UploadReceipt({
                   />
                   {t("upload.recurring")}
                 </label>
+
+                <label className="text-xs text-muted">
+                  {t("upload.loanTenure")}
+                  <select
+                    value={draft.loanTenureMonths ?? ""}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        loanTenureMonths: e.target.value ? Number(e.target.value) : null,
+                        isRecurring: e.target.value ? true : draft.isRecurring,
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                  >
+                    <option value="">{t("upload.loanTenureNone")}</option>
+                    {LOAN_TENURE_OPTIONS.map((months) => (
+                      <option key={months} value={months}>
+                        {months} {t("upload.months")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
             )}
 
@@ -529,14 +624,14 @@ export default function UploadReceipt({
               <button
                 onClick={handleSave}
                 disabled={status === "saving"}
-                className="flex-1 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black hover:bg-accent-strong disabled:opacity-60"
+                className="btn-pill btn-pill-primary flex-1"
               >
                 {status === "saving" ? t("upload.saving") : t("upload.save")}
               </button>
               <button
                 onClick={reset}
                 disabled={status === "saving"}
-                className="rounded-full border border-border px-4 py-2 text-sm hover:bg-surface-2 disabled:opacity-60"
+                className="btn-pill btn-pill-outline"
               >
                 {t("upload.cancel")}
               </button>
