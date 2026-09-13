@@ -440,7 +440,7 @@ export default function UploadReceipt({
       )}
 
       {(status === "review" || status === "saving") && draft && (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="relative grid gap-6 md:grid-cols-2">
           {preview ? (
             <img
               src={preview}

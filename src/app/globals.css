@@ -344,21 +344,21 @@ body {
 
 /* Liquid-glass calculator — a real keypad (chained +/-/×/÷, %, sign
    toggle) so an unevenly shared expense can be worked out directly,
-   not just an even total/people division. Rendered as a centered
-   fixed overlay so it lands in the same spot regardless of where the
-   triggering field sits on the page, on any viewport size. */
+   not just an even total/people division. Rendered as a solid,
+   opaque overlay centered over the "review extracted details" card
+   itself (its nearest positioned ancestor) rather than the whole
+   page, so it never bleeds past that section. */
 .glass-calc-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(2, 4, 8, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  animation: glass-calc-overlay-in 0.25s ease both;
+  border-radius: 1rem;
+  background: var(--surface);
+  animation: glass-calc-overlay-in 0.2s ease both;
 }
 
 @keyframes glass-calc-overlay-in {
