@@ -66,15 +66,15 @@ CREATE TABLE IF NOT EXISTS budgets (
 
 CREATE INDEX IF NOT EXISTS idx_budgets_user_id ON budgets (user_id);
 
-CREATE TABLE IF NOT EXISTS monthly_income (
+CREATE TABLE IF NOT EXISTS income_entries (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users (id),
   year INTEGER NOT NULL,
   month INTEGER NOT NULL,
   amount REAL NOT NULL,
   income_type TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  UNIQUE (user_id, year, month)
+  label TEXT,
+  created_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_monthly_income_user_id ON monthly_income (user_id);
+CREATE INDEX IF NOT EXISTS idx_income_entries_user_period ON income_entries (user_id, year, month);

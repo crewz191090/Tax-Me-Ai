@@ -1,57 +1,84 @@
 import { getCfEnv } from "./cloudflare";
 
-export interface MonthlyIncome {
+export interface IncomeEntry {
+  id: string;
   year: number;
   month: number;
   amount: number;
   incomeType: string;
+  label: string | null;
 }
 
-interface MonthlyIncomeRow {
+interface IncomeEntryRow {
+  id: string;
   year: number;
   month: number;
   amount: number;
   income_type: string;
+  label: string | null;
 }
 
-export async function getMonthlyIncome(
+export async function listIncomeEntries(
   userId: string,
   year: number,
   month: number
-): Promise<MonthlyIncome | null> {
+): Promise<IncomeEntry[]> {
   const env = await getCfEnv();
-  const row = await env.DB.prepare(
-    "SELECT year, month, amount, income_type FROM monthly_income WHERE user_id = ? AND year = ? AND month = ?"
+  const { results } = await env.DB.prepare(
+    "SELECT id, year, month, amount, income_type, label FROM income_entries WHERE user_id = ? AND year = ? AND month = ? ORDER BY created_at ASC"
   )
     .bind(userId, year, month)
-    .first<MonthlyIncomeRow>();
+    .all<IncomeEntryRow>();
 
-  if (!row) return null;
-  return { year: row.year, month: row.month, amount: row.amount, incomeType: row.income_type };
+  return results.map((r) => ({
+    id: r.id,
+    year: r.year,
+    month: r.month,
+    amount: r.amount,
+    incomeType: r.income_type,
+    label: r.label,
+  }));
 }
 
-export async function upsertMonthlyIncome(
+export async function createIncomeEntry(
   userId: string,
   year: number,
   month: number,
   amount: number,
-  incomeType: string
-): Promise<void> {
+  incomeType: string,
+  label: string | null
+): Promise<string> {
   const env = await getCfEnv();
-  const id = `income_${userId}_${year}_${month}`;
+  const id = `income_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   await env.DB.prepare(
-    `INSERT INTO monthly_income (id, user_id, year, month, amount, income_type, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(user_id, year, month) DO UPDATE SET amount = excluded.amount, income_type = excluded.income_type`
+    `INSERT INTO income_entries (id, user_id, year, month, amount, income_type, label, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   )
-    .bind(id, userId, year, month, amount, incomeType, new Date().toISOString())
+    .bind(id, userId, year, month, amount, incomeType, label, new Date().toISOString())
+    .run();
+
+  return id;
+}
+
+export async function updateIncomeEntry(
+  userId: string,
+  id: string,
+  amount: number,
+  incomeType: string,
+  label: string | null
+): Promise<void> {
+  const env = await getCfEnv();
+  await env.DB.prepare(
+    "UPDATE income_entries SET amount = ?, income_type = ?, label = ? WHERE id = ? AND user_id = ?"
+  )
+    .bind(amount, incomeType, label, id, userId)
     .run();
 }
 
-export async function deleteMonthlyIncome(userId: string, year: number, month: number): Promise<void> {
+export async function deleteIncomeEntry(userId: string, id: string): Promise<void> {
   const env = await getCfEnv();
-  await env.DB.prepare("DELETE FROM monthly_income WHERE user_id = ? AND year = ? AND month = ?")
-    .bind(userId, year, month)
+  await env.DB.prepare("DELETE FROM income_entries WHERE id = ? AND user_id = ?")
+    .bind(id, userId)
     .run();
 }

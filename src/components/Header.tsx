@@ -63,10 +63,7 @@ export default function Header() {
               <span className="max-w-[140px] truncate text-xs text-muted">
                 {user.email}
               </span>
-              <button
-                onClick={logout}
-                className="rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-2"
-              >
+              <button onClick={logout} className="btn-pill btn-pill-outline">
                 {t("nav.logout")}
               </button>
             </div>
@@ -142,7 +139,7 @@ export default function Header() {
                 logout();
                 setMenuOpen(false);
               }}
-              className="mt-2 rounded-full border border-border px-4 py-2 text-center font-semibold"
+              className="btn-pill btn-pill-outline mt-2"
             >
               {t("nav.logout")}
             </button>

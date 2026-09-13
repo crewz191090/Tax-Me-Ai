@@ -9,6 +9,7 @@ import {
   yearsWithReceipts,
   type Period,
 } from "@/lib/reliefCalc";
+import { downloadMonthlyExpensePdf } from "@/lib/exportPdf";
 import CategoryPieChart from "./CategoryPieChart";
 import SpendingTrendChart from "./SpendingTrendChart";
 import type { Receipt } from "@/lib/types";
@@ -53,6 +54,10 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
   );
 
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
+
+  function handleExportPdf() {
+    downloadMonthlyExpensePdf(receipts, year, month, monthNames[month - 1], lang);
+  }
 
   return (
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
@@ -105,6 +110,11 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
             </option>
           ))}
         </select>
+        {view === "month" && (
+          <button onClick={handleExportPdf} className="btn-pill btn-pill-outline btn-pill-sm ml-auto">
+            📄 {t("expenses.exportPdf")}
+          </button>
+        )}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">

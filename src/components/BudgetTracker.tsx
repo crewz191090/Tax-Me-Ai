@@ -5,11 +5,13 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { INCOME_TYPES, getIncomeType } from "@/lib/incomeTypes";
 import type { Receipt } from "@/lib/types";
 
-interface MonthlyIncome {
+interface IncomeEntry {
+  id: string;
   year: number;
   month: number;
   amount: number;
   incomeType: string;
+  label: string | null;
 }
 
 function barColor(pct: number) {
@@ -18,34 +20,36 @@ function barColor(pct: number) {
   return "bg-accent";
 }
 
+interface EntryForm {
+  amount: string;
+  incomeType: string;
+  label: string;
+}
+
+const EMPTY_FORM: EntryForm = { amount: "", incomeType: INCOME_TYPES[0].id, label: "" };
+
 export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
   const { lang, t } = useLanguage();
-  const [income, setIncome] = useState<MonthlyIncome | null>(null);
+  const [entries, setEntries] = useState<IncomeEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [amountInput, setAmountInput] = useState("");
-  const [typeInput, setTypeInput] = useState(INCOME_TYPES[0].id);
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<EntryForm>(EMPTY_FORM);
 
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const loadIncome = useCallback(() => {
+  const loadEntries = useCallback(() => {
     fetch(`/api/income?year=${currentYear}&month=${currentMonth}`)
-      .then((res) => res.json() as Promise<{ income?: MonthlyIncome | null }>)
-      .then((json) => {
-        setIncome(json.income ?? null);
-        if (json.income) {
-          setAmountInput(String(json.income.amount));
-          setTypeInput(json.income.incomeType);
-        }
-      })
+      .then((res) => res.json() as Promise<{ entries?: IncomeEntry[] }>)
+      .then((json) => setEntries(json.entries ?? []))
       .finally(() => setLoaded(true));
   }, [currentYear, currentMonth]);
 
   useEffect(() => {
-    loadIncome();
-  }, [loadIncome]);
+    loadEntries();
+  }, [loadEntries]);
 
   const spentThisMonth = useMemo(() => {
     let total = 0;
@@ -59,65 +63,108 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
     return total;
   }, [receipts, currentYear, currentMonth]);
 
-  async function handleSave() {
-    const amount = parseFloat(amountInput);
-    if (!amount || amount <= 0) return;
+  const totalIncome = entries.reduce((sum, e) => sum + e.amount, 0);
 
-    const res = await fetch("/api/income", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year: currentYear, month: currentMonth, amount, incomeType: typeInput }),
-    });
-    if (!res.ok) return;
-
-    setIncome({ year: currentYear, month: currentMonth, amount, incomeType: typeInput });
-    setEditing(false);
+  function startAdd() {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setAdding(true);
   }
 
-  async function handleRemove() {
-    await fetch(`/api/income?year=${currentYear}&month=${currentMonth}`, { method: "DELETE" });
-    setIncome(null);
-    setAmountInput("");
-    setEditing(false);
+  function startEdit(entry: IncomeEntry) {
+    setForm({ amount: String(entry.amount), incomeType: entry.incomeType, label: entry.label ?? "" });
+    setEditingId(entry.id);
+    setAdding(true);
+  }
+
+  function cancelForm() {
+    setAdding(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  }
+
+  async function handleSave() {
+    const amount = parseFloat(form.amount);
+    if (!amount || amount <= 0) return;
+    const label = form.label.trim() || null;
+
+    if (editingId) {
+      const res = await fetch(`/api/income/${editingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, incomeType: form.incomeType, label }),
+      });
+      if (!res.ok) return;
+      setEntries((prev) =>
+        prev.map((e) => (e.id === editingId ? { ...e, amount, incomeType: form.incomeType, label } : e))
+      );
+    } else {
+      const res = await fetch("/api/income", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year: currentYear,
+          month: currentMonth,
+          amount,
+          incomeType: form.incomeType,
+          label,
+        }),
+      });
+      if (!res.ok) return;
+      const json = (await res.json()) as { id: string };
+      setEntries((prev) => [
+        ...prev,
+        { id: json.id, year: currentYear, month: currentMonth, amount, incomeType: form.incomeType, label },
+      ]);
+    }
+
+    cancelForm();
+  }
+
+  async function handleRemove(id: string) {
+    await fetch(`/api/income/${id}`, { method: "DELETE" });
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+    if (editingId === id) cancelForm();
   }
 
   if (!loaded) return null;
 
-  const remaining = income ? income.amount - spentThisMonth : 0;
-  const pct = income ? Math.min(100, (spentThisMonth / income.amount) * 100) : 0;
-  const over = income ? spentThisMonth > income.amount : false;
-  const incomeType = income ? getIncomeType(income.incomeType) : null;
+  const remaining = totalIncome - spentThisMonth;
+  const pct = totalIncome > 0 ? Math.min(100, (spentThisMonth / totalIncome) * 100) : 0;
+  const over = totalIncome > 0 && spentThisMonth > totalIncome;
 
   return (
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">{t("expenses.budgetTitle")}</h2>
-        <button
-          onClick={() => setEditing((v) => !v)}
-          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2"
-        >
-          {income ? t("expenses.budgetEdit") : t("expenses.budgetAdd")}
-        </button>
+        {!adding && (
+          <button
+            onClick={startAdd}
+            className="btn-pill btn-pill-primary btn-pill-sm"
+          >
+            {entries.length > 0 ? t("expenses.budgetAddAnother") : t("expenses.budgetAdd")}
+          </button>
+        )}
       </div>
       <p className="mb-5 text-sm text-muted">{t("expenses.budgetSubtitle")}</p>
 
-      {editing && (
+      {adding && (
         <div className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-2/50 p-3">
           <label className="text-xs text-muted">
             {t("expenses.budgetIncomeAmount")}
             <input
               type="number"
               step="0.01"
-              value={amountInput}
-              onChange={(e) => setAmountInput(e.target.value)}
-              className="mt-1 block w-36 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+              value={form.amount}
+              onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+              className="mt-1 block w-32 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
             />
           </label>
           <label className="text-xs text-muted">
             {t("expenses.budgetIncomeType")}
             <select
-              value={typeInput}
-              onChange={(e) => setTypeInput(e.target.value)}
+              value={form.incomeType}
+              onChange={(e) => setForm((f) => ({ ...f, incomeType: e.target.value }))}
               className="mt-1 block rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
             >
               {INCOME_TYPES.map((it) => (
@@ -127,33 +174,71 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
               ))}
             </select>
           </label>
-          <button
-            onClick={handleSave}
-            className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-black hover:bg-accent-strong"
-          >
+          <label className="text-xs text-muted">
+            {t("expenses.budgetLabel")}
+            <input
+              type="text"
+              value={form.label}
+              placeholder={t("expenses.budgetLabelPlaceholder")}
+              onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+              className="mt-1 block w-44 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+            />
+          </label>
+          <button onClick={handleSave} className="btn-pill btn-pill-primary">
             {t("expenses.budgetSave")}
           </button>
-          {income && (
-            <button
-              onClick={handleRemove}
-              className="rounded-full border border-border px-3 py-2 text-xs text-muted hover:text-red-400"
-            >
-              {t("expenses.budgetRemove")}
-            </button>
-          )}
+          <button onClick={cancelForm} className="btn-pill btn-pill-ghost">
+            {t("expenses.budgetCancel")}
+          </button>
         </div>
       )}
 
-      {!income ? (
+      {entries.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted">{t("expenses.budgetNone")}</p>
       ) : (
+        <div className="mb-5 flex flex-col gap-2">
+          {entries.map((entry) => {
+            const incomeType = getIncomeType(entry.incomeType);
+            return (
+              <div
+                key={entry.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface-2/50 px-3 py-2"
+              >
+                <span className="text-sm">
+                  {incomeType.emoji} {entry.label || (lang === "bm" ? incomeType.nameBm : incomeType.nameEn)}
+                  {entry.label && (
+                    <span className="ml-2 text-xs text-muted">
+                      ({lang === "bm" ? incomeType.nameBm : incomeType.nameEn})
+                    </span>
+                  )}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono-tight text-sm text-muted">RM {entry.amount.toFixed(2)}</span>
+                  <button
+                    onClick={() => startEdit(entry)}
+                    className="btn-pill btn-pill-outline btn-pill-sm"
+                  >
+                    {t("expenses.budgetEdit")}
+                  </button>
+                  <button
+                    onClick={() => handleRemove(entry.id)}
+                    className="btn-pill btn-pill-danger btn-pill-sm"
+                  >
+                    {t("expenses.budgetRemove")}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {entries.length > 0 && (
         <div>
           <div className="mb-1 flex items-center justify-between text-sm">
-            <span className="font-medium">
-              {incomeType?.emoji} {lang === "bm" ? incomeType?.nameBm : incomeType?.nameEn}
-            </span>
+            <span className="font-medium">{t("expenses.budgetTotalIncome")}</span>
             <span className="font-mono-tight text-muted">
-              RM {spentThisMonth.toFixed(2)} / RM {income.amount.toFixed(2)}
+              RM {spentThisMonth.toFixed(2)} / RM {totalIncome.toFixed(2)}
             </span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
@@ -164,7 +249,7 @@ export default function BudgetTracker({ receipts }: { receipts: Receipt[] }) {
           </div>
           <p className="mt-1 text-[11px] text-muted">
             {over
-              ? `${t("expenses.budgetOver")}: RM ${(spentThisMonth - income.amount).toFixed(2)}`
+              ? `${t("expenses.budgetOver")}: RM ${(spentThisMonth - totalIncome).toFixed(2)}`
               : `${t("expenses.budgetRemaining")}: RM ${remaining.toFixed(2)}`}
           </p>
         </div>

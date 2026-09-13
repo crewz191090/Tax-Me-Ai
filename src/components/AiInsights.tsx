@@ -63,11 +63,7 @@ export default function AiInsights({
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <span>✨</span> {t("insights.title")}
         </h2>
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-black hover:bg-accent-strong disabled:opacity-60"
-        >
+        <button onClick={handleGenerate} disabled={loading} className="btn-pill btn-pill-primary btn-pill-sm">
           {loading ? t("insights.loading") : t("insights.generate")}
         </button>
       </div>

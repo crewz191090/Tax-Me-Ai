@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
-import { deleteMonthlyIncome, getMonthlyIncome, upsertMonthlyIncome } from "@/lib/incomeDb";
+import { createIncomeEntry, listIncomeEntries } from "@/lib/incomeDb";
 import { INCOME_TYPE_IDS } from "@/lib/incomeTypes";
 
 export const runtime = "nodejs";
@@ -25,15 +25,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const income = await getMonthlyIncome(user.id, period.year, period.month);
-    return NextResponse.json({ income });
+    const entries = await listIncomeEntries(user.id, period.year, period.month);
+    return NextResponse.json({ entries });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -45,11 +45,13 @@ export async function PUT(req: NextRequest) {
       month?: number;
       amount?: number;
       incomeType?: string;
+      label?: string | null;
     };
     const year = body.year ?? 0;
     const month = body.month ?? 0;
     const amount = body.amount ?? 0;
     const incomeType = body.incomeType ?? "";
+    const label = typeof body.label === "string" && body.label.trim() ? body.label.trim() : null;
 
     if (!year || !month || month < 1 || month > 12) {
       return NextResponse.json({ error: "Invalid year/month." }, { status: 400 });
@@ -61,28 +63,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Invalid income type." }, { status: 400 });
     }
 
-    await upsertMonthlyIncome(user.id, year, month, amount, incomeType);
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
-
-  const period = parseYearMonth(req);
-  if (!period) {
-    return NextResponse.json({ error: "Invalid year/month." }, { status: 400 });
-  }
-
-  try {
-    await deleteMonthlyIncome(user.id, period.year, period.month);
-    return NextResponse.json({ ok: true });
+    const id = await createIncomeEntry(user.id, year, month, amount, incomeType, label);
+    return NextResponse.json({ id }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

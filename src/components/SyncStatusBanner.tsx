@@ -35,7 +35,7 @@ export default function SyncStatusBanner({
         <button
           onClick={onSyncNow}
           disabled={syncing}
-          className="rounded-full border border-amber-400/40 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-400/10 disabled:opacity-60"
+          className="btn-pill btn-pill-sm border-amber-400/40 text-amber-300 hover:bg-amber-400/10"
         >
           {syncing ? t("dashboard.syncing") : t("dashboard.syncNow")}
         </button>

@@ -113,10 +113,7 @@ export default function DashboardPage() {
               <p className="mt-1 text-sm text-muted">{t("dashboard.subtitle")}</p>
             </div>
             {receipts.length > 0 && (
-              <button
-                onClick={() => downloadCsv(receipts)}
-                className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-surface-2"
-              >
+              <button onClick={() => downloadCsv(receipts)} className="btn-pill btn-pill-outline">
                 {t("dashboard.export")}
               </button>
             )}

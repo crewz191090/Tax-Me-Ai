@@ -128,7 +128,7 @@ export default function ReceiptsTable({
                     ) : (
                       <button
                         onClick={() => setEditingDateId(r.id)}
-                        className="rounded-lg px-1.5 py-0.5 hover:bg-surface-2"
+                        className="rounded-full px-2 py-0.5 hover:bg-surface-2"
                         title={t("table.editDate")}
                       >
                         {r.date}
@@ -210,19 +210,28 @@ export default function ReceiptsTable({
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-3">
+                    <div className="flex items-center justify-end gap-2">
                       {r.imageKey && (
-                        <button
-                          onClick={() => setViewingReceipt(r)}
-                          className="text-xs text-muted hover:text-accent"
-                        >
-                          {t("image.view")}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setViewingReceipt(r)}
+                            className="btn-pill btn-pill-outline btn-pill-sm"
+                          >
+                            {t("image.view")}
+                          </button>
+                          <a
+                            href={`/api/receipts/${r.id}/image`}
+                            download={`${r.merchant.replace(/[^\w-]+/g, "_")}.jpg`}
+                            className="btn-pill btn-pill-outline btn-pill-sm"
+                          >
+                            {t("image.download")}
+                          </a>
+                        </>
                       )}
                       <button
                         onClick={() => handleDelete(r.id)}
                         disabled={pendingId === r.id}
-                        className="text-xs text-muted hover:text-red-400 disabled:opacity-50"
+                        className="btn-pill btn-pill-danger btn-pill-sm"
                       >
                         {pendingId === r.id ? t("table.deleting") : t("table.delete")}
                       </button>

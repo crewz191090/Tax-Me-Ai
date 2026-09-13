@@ -88,3 +88,70 @@ body {
   font-family: var(--font-geist-mono);
   letter-spacing: -0.01em;
 }
+
+/* Futuristic pill buttons — shared shape/motion for every action button */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-pill-sm {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.7rem;
+}
+
+.btn-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-pill-primary {
+  background: var(--accent);
+  color: #04121a;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 4px 16px rgba(34, 211, 238, 0.2);
+}
+.btn-pill-primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4), 0 6px 20px rgba(56, 189, 248, 0.3);
+}
+
+.btn-pill-outline {
+  border-color: var(--border);
+  background: rgba(17, 22, 29, 0.5);
+  color: var(--foreground);
+}
+.btn-pill-outline:hover:not(:disabled) {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: var(--surface-2);
+}
+
+.btn-pill-ghost {
+  border-color: var(--border);
+  color: var(--muted);
+  background: transparent;
+}
+.btn-pill-ghost:hover:not(:disabled) {
+  color: var(--foreground);
+  background: var(--surface-2);
+}
+
+.btn-pill-danger {
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+.btn-pill-danger:hover:not(:disabled) {
+  border-color: rgba(248, 113, 113, 0.55);
+  background: rgba(248, 113, 113, 0.16);
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.25), 0 4px 16px rgba(248, 113, 113, 0.2);
+}
