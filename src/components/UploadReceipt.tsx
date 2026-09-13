@@ -75,6 +75,7 @@ export default function UploadReceipt({
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [amountText, setAmountText] = useState("0.00");
   const [source, setSource] = useState<Source>(null);
   const [showMore, setShowMore] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -124,7 +125,9 @@ export default function UploadReceipt({
           throw new Error(json.error || "AI scan failed");
         }
 
-        setDraft(draftFromExtracted(json.extracted));
+        const extractedDraft = draftFromExtracted(json.extracted);
+        setDraft(extractedDraft);
+        setAmountText(extractedDraft.amount.toFixed(2));
         setSource("ai");
         setStatus("review");
         return;
@@ -135,7 +138,9 @@ export default function UploadReceipt({
 
     try {
       const extracted = await extractReceiptLocally(selectedFile);
-      setDraft(draftFromExtracted(extracted));
+      const extractedDraft = draftFromExtracted(extracted);
+      setDraft(extractedDraft);
+      setAmountText(extractedDraft.amount.toFixed(2));
       setSource("local");
       setStatus("review");
     } catch (err) {
@@ -168,6 +173,7 @@ export default function UploadReceipt({
       location: "",
       loanTenureMonths: null,
     });
+    setAmountText("0.00");
     setSource("manual");
     setStatus("review");
   }
@@ -289,6 +295,7 @@ export default function UploadReceipt({
     setPreview(null);
     setFile(null);
     setDraft(null);
+    setAmountText("0.00");
     setSource(null);
     setShowMore(false);
     setValidationError(null);
@@ -307,6 +314,7 @@ export default function UploadReceipt({
     if (total > 0 && people > 0) {
       const share = Math.round((total / people) * 100) / 100;
       setDraft((prev) => (prev ? { ...prev, amount: share } : prev));
+      setAmountText(share.toFixed(2));
     }
   }
 
@@ -494,29 +502,34 @@ export default function UploadReceipt({
                 />
               </label>
               <label className="text-xs text-muted">
-                <div className="flex items-center justify-between">
-                  <span>{t("upload.amount")}</span>
+                {t("upload.amount")}
+                <div className="relative mt-1">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={amountText}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "" || /^\d*\.?\d{0,2}$/.test(v)) {
+                        setAmountText(v);
+                        setDraft({ ...draft, amount: parseFloat(v) || 0 });
+                      }
+                    }}
+                    onFocus={(e) => e.target.select()}
+                    onBlur={() => setAmountText((parseFloat(amountText) || 0).toFixed(2))}
+                    className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 pr-9 text-sm text-foreground outline-none focus:border-accent"
+                  />
                   <button
                     type="button"
                     onClick={() => setSplitEnabled((v) => !v)}
                     title={t("upload.splitEnable")}
-                    className={`rounded-full px-1.5 py-0.5 text-xs transition-colors ${
+                    className={`absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full px-1 py-0.5 text-xs transition-colors ${
                       splitEnabled ? "bg-accent/20 text-accent" : "text-muted hover:text-foreground"
                     }`}
                   >
                     🧮
                   </button>
                 </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={draft.amount}
-                  onChange={(e) =>
-                    setDraft({ ...draft, amount: parseFloat(e.target.value) || 0 })
-                  }
-                  onFocus={(e) => e.target.select()}
-                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-                />
               </label>
             </div>
 

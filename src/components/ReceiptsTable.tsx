@@ -118,7 +118,7 @@ export default function ReceiptsTable({
                     {r.imageKey ? (
                       <button
                         onClick={() => setViewingReceipt(r)}
-                        className="block h-10 w-10 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
+                        className="block h-12 w-20 shrink-0 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
                         title={t("image.view")}
                       >
                         <img
@@ -129,7 +129,7 @@ export default function ReceiptsTable({
                       </button>
                     ) : (
                       <span
-                        className="flex h-12 w-20 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-border bg-surface-2 px-1 py-1 text-center leading-tight text-muted"
+                        className="flex h-12 w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-border bg-surface-2 px-1 py-1 text-center leading-tight text-muted"
                         title={t("table.noImage")}
                       >
                         <span className="text-sm">🖼️</span>
