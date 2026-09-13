@@ -18,9 +18,6 @@ export const metadata: Metadata = {
   title: "Tax Me AI — Malaysian Receipt & Tax Relief Tracker",
   description:
     "Snap or upload your receipts and let AI match them to the right LHDN individual tax relief category — built for Malaysian individual taxpayers.",
-  icons: {
-    icon: "/logo.png",
-  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

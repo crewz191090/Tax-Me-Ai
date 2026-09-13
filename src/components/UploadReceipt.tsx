@@ -8,9 +8,13 @@ import {
   type TransactionType,
 } from "@/lib/expenseCategories";
 import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
+import { extractReceiptLocally } from "@/lib/localOcr";
+import { addPendingReceipt } from "@/lib/offlineQueue";
+import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
+type Source = "ai" | "local" | null;
 
 interface Draft {
   merchant: string;
@@ -55,15 +59,19 @@ function draftFromExtracted(extracted: ExtractedReceipt): Draft {
 
 export default function UploadReceipt({
   onSaved,
+  onQueued,
 }: {
   onSaved: (receipt: Receipt) => void;
+  onQueued?: () => void;
 }) {
   const { lang, t } = useLanguage();
+  const online = useOnlineStatus();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [source, setSource] = useState<Source>(null);
   const [showMore, setShowMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -73,28 +81,37 @@ export default function UploadReceipt({
     setStatus("scanning");
     setFile(selectedFile);
 
-    try {
-      const dataUrl = await fileToDataUrl(selectedFile);
-      setPreview(dataUrl);
+    const dataUrl = await fileToDataUrl(selectedFile);
+    setPreview(dataUrl);
 
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+    // Load-balance: try the AI scan only if we appear to be online; if the
+    // AI call fails for any reason (quota, network blip, server error),
+    // fall back to fully local OCR so scanning still works.
+    if (online) {
+      try {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
 
-      const res = await fetch("/api/scan", {
-        method: "POST",
-        body: formData,
-      });
+        const res = await fetch("/api/scan", { method: "POST", body: formData });
+        const json = (await res.json()) as { extracted?: ExtractedReceipt; error?: string };
 
-      const json = (await res.json()) as {
-        extracted?: ExtractedReceipt;
-        error?: string;
-      };
+        if (!res.ok || !json.extracted) {
+          throw new Error(json.error || "AI scan failed");
+        }
 
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to scan receipt.");
+        setDraft(draftFromExtracted(json.extracted));
+        setSource("ai");
+        setStatus("review");
+        return;
+      } catch {
+        // fall through to local OCR below
       }
+    }
 
-      setDraft(draftFromExtracted(json.extracted as ExtractedReceipt));
+    try {
+      const extracted = await extractReceiptLocally(selectedFile);
+      setDraft(draftFromExtracted(extracted));
+      setSource("local");
       setStatus("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -135,15 +152,8 @@ export default function UploadReceipt({
       if (draft.location) formData.append("location", draft.location);
       if (file) formData.append("file", file);
 
-      const res = await fetch("/api/receipts", {
-        method: "POST",
-        body: formData,
-      });
-
-      const json = (await res.json()) as {
-        receipt?: Receipt;
-        error?: string;
-      };
+      const res = await fetch("/api/receipts", { method: "POST", body: formData });
+      const json = (await res.json()) as { receipt?: Receipt; error?: string };
 
       if (!res.ok) {
         throw new Error(json.error || "Failed to save receipt.");
@@ -151,9 +161,32 @@ export default function UploadReceipt({
 
       onSaved(json.receipt as Receipt);
       reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save receipt.");
-      setStatus("error");
+    } catch {
+      // Network (or server) unreachable — queue it locally instead of
+      // losing the scan; it will sync automatically once back online.
+      try {
+        await addPendingReceipt({
+          merchant: draft.merchant,
+          date: draft.date,
+          amount: draft.amount,
+          subcategory: draft.subcategory,
+          reliefCategory: draft.reliefCategory,
+          type: draft.type,
+          paymentMethod: draft.paymentMethod,
+          accountName: draft.accountName,
+          tags: draft.tags,
+          isRecurring: draft.isRecurring,
+          location: draft.location,
+          isEInvoice: draft.isEInvoice,
+          imageDataUrl: preview,
+          imageType: file?.type ?? null,
+        });
+        onQueued?.();
+        reset();
+      } catch (queueErr) {
+        setError(queueErr instanceof Error ? queueErr.message : "Failed to save receipt.");
+        setStatus("error");
+      }
     }
   }
 
@@ -163,6 +196,7 @@ export default function UploadReceipt({
     setPreview(null);
     setFile(null);
     setDraft(null);
+    setSource(null);
     setShowMore(false);
     if (inputRef.current) inputRef.current.value = "";
   }
@@ -197,6 +231,9 @@ export default function UploadReceipt({
           </span>
           <p className="text-sm font-medium">{t("upload.drop")}</p>
           <p className="mt-1 text-xs text-muted">{t("upload.hint")}</p>
+          {!online && (
+            <p className="mt-2 text-xs text-amber-300">{t("upload.offlineNotice")}</p>
+          )}
         </div>
       )}
 
@@ -211,7 +248,7 @@ export default function UploadReceipt({
           )}
           <div className="flex items-center gap-2 text-sm text-muted">
             <span className="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-            {t("upload.scanning")}
+            {online ? t("upload.scanning") : t("upload.scanningLocal")}
           </div>
         </div>
       )}
@@ -239,9 +276,22 @@ export default function UploadReceipt({
           )}
 
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent">
-              {t("upload.review")}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+                {t("upload.review")}
+              </p>
+              {source && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    source === "ai"
+                      ? "bg-accent/15 text-accent"
+                      : "bg-amber-400/15 text-amber-300"
+                  }`}
+                >
+                  {source === "ai" ? t("upload.sourceAi") : t("upload.sourceLocal")}
+                </span>
+              )}
+            </div>
 
             <label className="text-xs text-muted">
               {t("upload.merchant")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import UploadReceipt from "@/components/UploadReceipt";
@@ -12,20 +12,53 @@ import BudgetTracker from "@/components/BudgetTracker";
 import CashFlowSummary from "@/components/CashFlowSummary";
 import RecurringExpenses from "@/components/RecurringExpenses";
 import AiInsights from "@/components/AiInsights";
+import SyncStatusBanner from "@/components/SyncStatusBanner";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import { downloadCsv } from "@/lib/exportCsv";
+import { getPendingReceipts, syncPendingReceipts } from "@/lib/offlineQueue";
 import type { Receipt } from "@/lib/types";
 
 export default function DashboardPage() {
   const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const online = useOnlineStatus();
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+
+  const refreshReceipts = useCallback(() => {
+    return fetch("/api/receipts")
+      .then((res) => res.json() as Promise<{ receipts?: Receipt[]; error?: string }>)
+      .then((json) => {
+        if (json.error) throw new Error(json.error);
+        setReceipts(json.receipts ?? []);
+      })
+      .catch((err) =>
+        setLoadError(err instanceof Error ? err.message : "Failed to load receipts.")
+      );
+  }, []);
+
+  const refreshPendingCount = useCallback(() => {
+    getPendingReceipts().then((queue) => setPendingCount(queue.length));
+  }, []);
+
+  const runSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await syncPendingReceipts();
+      await refreshReceipts();
+    } finally {
+      await refreshPendingCount();
+      setSyncing(false);
+    }
+  }, [refreshReceipts, refreshPendingCount]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -34,20 +67,26 @@ export default function DashboardPage() {
       return;
     }
 
-    fetch("/api/receipts")
-      .then((res) => res.json() as Promise<{ receipts?: Receipt[]; error?: string }>)
-      .then((json) => {
-        if (json.error) throw new Error(json.error);
-        setReceipts(json.receipts ?? []);
-      })
-      .catch((err) =>
-        setLoadError(err instanceof Error ? err.message : "Failed to load receipts.")
-      )
-      .finally(() => setLoaded(true));
-  }, [authLoading, user, router]);
+    refreshReceipts().finally(() => setLoaded(true));
+    refreshPendingCount();
+  }, [authLoading, user, router, refreshReceipts, refreshPendingCount]);
+
+  useEffect(() => {
+    if (!online) return;
+    // Coming back online (or loading while already online with a queue
+    // left over from a previous session) — try to flush pending receipts.
+    getPendingReceipts().then((queue) => {
+      if (queue.length > 0) runSync();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online]);
 
   function handleSaved(receipt: Receipt) {
     setReceipts((prev) => [receipt, ...prev]);
+  }
+
+  function handleQueued() {
+    refreshPendingCount();
   }
 
   if (authLoading || !user) {
@@ -83,8 +122,14 @@ export default function DashboardPage() {
             )}
           </div>
 
+          <SyncStatusBanner
+            pendingCount={pendingCount}
+            syncing={syncing}
+            onSyncNow={runSync}
+          />
+
           <div className="mb-8">
-            <UploadReceipt onSaved={handleSaved} />
+            <UploadReceipt onSaved={handleSaved} onQueued={handleQueued} />
           </div>
 
           {loadError && (
