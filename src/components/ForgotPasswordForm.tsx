@@ -36,7 +36,7 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-grid bg-radial-glow px-6">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-orbs bg-radial-glow px-6">
       <div className="glass glow-border w-full max-w-sm rounded-2xl border border-border p-8">
         <Link href="/" className="mb-6 flex items-center justify-center gap-2">
           <Image

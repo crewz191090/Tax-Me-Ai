@@ -8,7 +8,7 @@ export default function CtaSection() {
   const { user } = useAuth();
 
   return (
-    <section className="relative overflow-hidden border-b border-border bg-grid bg-radial-glow py-24">
+    <section className="relative overflow-hidden border-b border-border bg-orbs bg-radial-glow py-24">
       <div className="mx-auto max-w-2xl px-6 text-center">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {t("cta.title")}

@@ -40,12 +40,38 @@ body {
   color: var(--foreground);
 }
 
-/* Fine 1px grid, subtle — the "engineered" futuristic backdrop */
-.bg-grid {
+/* Soft blurred color blobs that slowly drift — replaces the old fine
+   grid-line backdrop with a calmer "floating gradient orb" look. */
+.bg-orbs {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
+    radial-gradient(45% 45% at 50% 50%, rgba(34, 211, 238, 0.22) 0%, transparent 70%),
+    radial-gradient(40% 40% at 50% 50%, rgba(99, 102, 241, 0.2) 0%, transparent 70%),
+    radial-gradient(38% 38% at 50% 50%, rgba(168, 85, 247, 0.16) 0%, transparent 70%);
+  background-repeat: no-repeat;
+  background-size:
+    60% 60%,
+    55% 55%,
+    50% 50%;
+  background-position:
+    10% 18%,
+    85% 12%,
+    52% 88%;
+  animation: orb-float 26s ease-in-out infinite alternate;
+}
+
+@keyframes orb-float {
+  0% {
+    background-position:
+      10% 18%,
+      85% 12%,
+      52% 88%;
+  }
+  100% {
+    background-position:
+      17% 26%,
+      77% 20%,
+      45% 80%;
+  }
 }
 
 .bg-radial-glow {

@@ -146,7 +146,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       <Header />
-      <main className="flex-1 bg-grid">
+      <main className="flex-1 bg-orbs">
         <div className="mx-auto max-w-5xl px-6 py-12">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">
