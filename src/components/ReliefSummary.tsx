@@ -6,6 +6,7 @@ import { computeReliefSummary, getReliefAlerts, yearsWithReceipts } from "@/lib/
 import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
 import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import ReliefGauge from "./ReliefGauge";
+import ReliefCategoryDonut from "./ReliefCategoryDonut";
 import type { Receipt } from "@/lib/types";
 
 const TOTAL_RELIEF_CAP = RELIEF_CATEGORIES.filter((c) => c.cap > 0).reduce(
@@ -103,39 +104,31 @@ export default function ReliefSummary({
             return (
               <div
                 key={row.categoryId}
-                className="rounded-xl border border-border bg-surface-2/50 p-4"
+                className="flex gap-3 rounded-xl border border-border bg-surface-2/50 p-4"
               >
-                <div className="mb-2 text-sm font-medium">
-                  {lang === "bm" ? row.nameBm : row.nameEn}
-                </div>
-                <div className="mb-2 flex items-center justify-between text-xs text-muted">
-                  <span>{t("relief.capLabel")}</span>
-                  <span className="font-mono-tight">RM {row.cap.toLocaleString()}</span>
-                </div>
-                <div className="mb-2 flex items-center justify-between text-xs text-muted">
-                  <span>{t("relief.usage")}</span>
-                  <span className="font-mono-tight">RM {row.spent.toFixed(2)}</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${pct}%`,
-                      background: over
-                        ? "linear-gradient(90deg, #fb7185, #e11d48)"
-                        : "linear-gradient(90deg, #22d3ee, #6366f1)",
-                    }}
-                  />
-                </div>
-                <div className="mt-2 flex items-center justify-between text-xs">
-                  <span className="text-muted">{t("relief.remaining")}</span>
-                  <span
-                    className={`font-mono-tight font-semibold ${
-                      over ? "text-red-400" : "text-accent"
-                    }`}
-                  >
-                    RM {row.remaining.toFixed(2)}
-                  </span>
+                <ReliefCategoryDonut pct={pct} over={over} />
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 truncate text-sm font-medium">
+                    {lang === "bm" ? row.nameBm : row.nameEn}
+                  </div>
+                  <div className="mb-1 flex items-center justify-between text-xs text-muted">
+                    <span>{t("relief.capLabel")}</span>
+                    <span className="font-mono-tight">RM {row.cap.toLocaleString()}</span>
+                  </div>
+                  <div className="mb-1 flex items-center justify-between text-xs text-muted">
+                    <span>{t("relief.usage")}</span>
+                    <span className="font-mono-tight">RM {row.spent.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted">{t("relief.remaining")}</span>
+                    <span
+                      className={`font-mono-tight font-semibold ${
+                        over ? "text-red-400" : "text-accent"
+                      }`}
+                    >
+                      RM {row.remaining.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
