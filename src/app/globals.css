@@ -355,9 +355,9 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(2, 4, 8, 0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(2, 4, 8, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   animation: glass-calc-overlay-in 0.25s ease both;
 }
 
@@ -370,8 +370,9 @@ body {
   }
 }
 
-/* Pops in with a soft overshoot, then keeps a gentle continuous bob so
-   the panel visibly "floats" above the page rather than sitting flat. */
+/* Pops in with a soft overshoot when the calculator icon is clicked,
+   then settles and stays put — no continuous bob once it's open, so it
+   doesn't drift once centered in the overlay. */
 @keyframes glass-calc-in {
   0% {
     opacity: 0;
@@ -384,16 +385,6 @@ body {
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes glass-calc-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
   }
 }
 
@@ -412,9 +403,7 @@ body {
     0 12px 36px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  animation:
-    glass-calc-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both,
-    glass-calc-float 4.5s ease-in-out 0.45s infinite;
+  animation: glass-calc-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .glass-calc-header {
