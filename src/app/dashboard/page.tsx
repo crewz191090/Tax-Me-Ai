@@ -7,6 +7,7 @@ import UploadReceipt from "@/components/UploadReceipt";
 import ReceiptsTable from "@/components/ReceiptsTable";
 import SummaryBar from "@/components/SummaryBar";
 import ReliefSummary from "@/components/ReliefSummary";
+import ExpensesOverview from "@/components/ExpensesOverview";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { downloadCsv } from "@/lib/exportCsv";
@@ -92,6 +93,9 @@ export default function DashboardPage() {
             <>
               <div className="mb-6">
                 <SummaryBar receipts={receipts} year={year} />
+              </div>
+              <div className="mb-6">
+                <ExpensesOverview receipts={receipts} />
               </div>
               <div className="mb-6">
                 <ReliefSummary

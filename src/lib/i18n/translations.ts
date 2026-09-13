@@ -117,6 +117,21 @@ export const translations = {
     "dashboard.reliefSummaryFor": "For year of assessment",
     "dashboard.totalClaimable": "Total claimable",
 
+    "expenses.title": "Spending overview",
+    "expenses.subtitle": "Every receipt, not just tax-deductible ones — see where your money goes.",
+    "expenses.viewMonth": "Month",
+    "expenses.viewYear": "Year",
+    "expenses.byCategory": "By category",
+    "expenses.trend": "Trend",
+    "expenses.trendMonth": "Months in",
+    "expenses.trendYear": "By year",
+    "expenses.legendDeductible": "Tax-deductible",
+    "expenses.legendPersonal": "Personal",
+
+    "image.view": "View",
+    "image.download": "Download",
+    "image.close": "Close",
+
     "upload.drop": "Drop a receipt photo here, or click to upload",
     "upload.hint": "JPG, PNG or WEBP — up to 10MB",
     "upload.scanning": "Reading receipt with AI…",
@@ -260,6 +275,21 @@ export const translations = {
     "dashboard.reliefSummary": "Ringkasan pelepasan cukai",
     "dashboard.reliefSummaryFor": "Bagi tahun taksiran",
     "dashboard.totalClaimable": "Jumlah boleh dituntut",
+
+    "expenses.title": "Tinjauan perbelanjaan",
+    "expenses.subtitle": "Semua resit, bukan sekadar yang boleh dipotong cukai — lihat ke mana wang anda pergi.",
+    "expenses.viewMonth": "Bulan",
+    "expenses.viewYear": "Tahun",
+    "expenses.byCategory": "Ikut kategori",
+    "expenses.trend": "Trend",
+    "expenses.trendMonth": "Bulan dalam",
+    "expenses.trendYear": "Ikut tahun",
+    "expenses.legendDeductible": "Boleh dipotong cukai",
+    "expenses.legendPersonal": "Peribadi",
+
+    "image.view": "Lihat",
+    "image.download": "Muat turun",
+    "image.close": "Tutup",
 
     "upload.drop": "Letak gambar resit di sini, atau klik untuk muat naik",
     "upload.hint": "JPG, PNG atau WEBP — sehingga 10MB",

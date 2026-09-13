@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
+import ReceiptImageModal from "./ReceiptImageModal";
 import type { Receipt } from "@/lib/types";
 
 export default function ReceiptsTable({
@@ -15,6 +16,7 @@ export default function ReceiptsTable({
   const { lang, t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
 
   async function handleDelete(id: string) {
     setPendingId(id);
@@ -48,6 +50,7 @@ export default function ReceiptsTable({
   }
 
   return (
+    <>
     <div className="overflow-x-auto rounded-2xl border border-border">
       <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="bg-surface-2 text-xs uppercase tracking-wide text-muted">
@@ -67,11 +70,17 @@ export default function ReceiptsTable({
               <tr key={r.id} className="hover:bg-surface-2/60">
                 <td className="px-4 py-3">
                   {r.imageKey ? (
-                    <img
-                      src={`/api/receipts/${r.id}/image`}
-                      alt={r.merchant}
-                      className="h-10 w-10 rounded-lg border border-border object-cover"
-                    />
+                    <button
+                      onClick={() => setViewingReceipt(r)}
+                      className="block h-10 w-10 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
+                      title={t("image.view")}
+                    >
+                      <img
+                        src={`/api/receipts/${r.id}/image`}
+                        alt={r.merchant}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
                   ) : (
                     <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-xs text-muted">
                       —
@@ -124,13 +133,23 @@ export default function ReceiptsTable({
                   )}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    disabled={pendingId === r.id}
-                    className="text-xs text-muted hover:text-red-400 disabled:opacity-50"
-                  >
-                    {pendingId === r.id ? t("table.deleting") : t("table.delete")}
-                  </button>
+                  <div className="flex items-center justify-end gap-3">
+                    {r.imageKey && (
+                      <button
+                        onClick={() => setViewingReceipt(r)}
+                        className="text-xs text-muted hover:text-accent"
+                      >
+                        {t("image.view")}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      disabled={pendingId === r.id}
+                      className="text-xs text-muted hover:text-red-400 disabled:opacity-50"
+                    >
+                      {pendingId === r.id ? t("table.deleting") : t("table.delete")}
+                    </button>
+                  </div>
                 </td>
               </tr>
             );
@@ -138,5 +157,13 @@ export default function ReceiptsTable({
         </tbody>
       </table>
     </div>
+    {viewingReceipt && (
+      <ReceiptImageModal
+        receiptId={viewingReceipt.id}
+        merchant={viewingReceipt.merchant}
+        onClose={() => setViewingReceipt(null)}
+      />
+    )}
+    </>
   );
 }

@@ -62,3 +62,104 @@ export function claimableForReceipt(receipt: Receipt): number {
   const cap = getReliefCategory(receipt.category).cap;
   return cap > 0 ? receipt.amount : 0;
 }
+
+export type Period =
+  | { type: "month"; year: number; month: number } // month: 1-12
+  | { type: "year"; year: number };
+
+function receiptInPeriod(receipt: Receipt, period: Period): boolean {
+  const receiptYear = Number(receipt.date.slice(0, 4));
+  if (receiptYear !== period.year) return false;
+  if (period.type === "month") {
+    const receiptMonth = Number(receipt.date.slice(5, 7));
+    return receiptMonth === period.month;
+  }
+  return true;
+}
+
+export interface CategoryBreakdownRow {
+  categoryId: string;
+  nameEn: string;
+  nameBm: string;
+  amount: number;
+  isDeductible: boolean;
+}
+
+/**
+ * Spending grouped by category for a given period — includes every
+ * category with any spend, including non-deductible personal spending,
+ * since this powers the general expense-tracking view (not just relief).
+ */
+export function computeCategoryBreakdown(
+  receipts: Receipt[],
+  period: Period
+): CategoryBreakdownRow[] {
+  const amountByCategory = new Map<string, number>();
+
+  for (const receipt of receipts) {
+    if (!receiptInPeriod(receipt, period)) continue;
+    const current = amountByCategory.get(receipt.category) ?? 0;
+    amountByCategory.set(receipt.category, current + receipt.amount);
+  }
+
+  const rows: CategoryBreakdownRow[] = [];
+  for (const [categoryId, amount] of amountByCategory) {
+    const category = getReliefCategory(categoryId);
+    rows.push({
+      categoryId,
+      nameEn: category.nameEn,
+      nameBm: category.nameBm,
+      amount,
+      isDeductible: category.cap > 0,
+    });
+  }
+
+  return rows.sort((a, b) => b.amount - a.amount);
+}
+
+export interface TrendPoint {
+  label: string;
+  key: number;
+  total: number;
+}
+
+const MONTH_KEYS_EN = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const MONTH_KEYS_BM = [
+  "Jan", "Feb", "Mac", "Apr", "Mei", "Jun",
+  "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis",
+];
+
+export function computeMonthlyTrend(
+  receipts: Receipt[],
+  year: number,
+  lang: "en" | "bm" = "en"
+): TrendPoint[] {
+  const totals = new Array(12).fill(0) as number[];
+
+  for (const receipt of receipts) {
+    const receiptYear = Number(receipt.date.slice(0, 4));
+    if (receiptYear !== year) continue;
+    const monthIndex = Number(receipt.date.slice(5, 7)) - 1;
+    if (monthIndex < 0 || monthIndex > 11) continue;
+    totals[monthIndex] += receipt.amount;
+  }
+
+  const labels = lang === "bm" ? MONTH_KEYS_BM : MONTH_KEYS_EN;
+  return totals.map((total, i) => ({ label: labels[i], key: i + 1, total }));
+}
+
+export function computeYearlyTrend(receipts: Receipt[]): TrendPoint[] {
+  const totals = new Map<number, number>();
+
+  for (const receipt of receipts) {
+    const year = Number(receipt.date.slice(0, 4));
+    totals.set(year, (totals.get(year) ?? 0) + receipt.amount);
+  }
+
+  return Array.from(totals.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([year, total]) => ({ label: String(year), key: year, total }));
+}
