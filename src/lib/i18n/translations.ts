@@ -116,6 +116,7 @@ export const translations = {
     "footer.rights": "All rights reserved.",
 
     "dashboard.title": "Your receipts",
+    "dashboard.globalFilter": "Showing data for:",
     "dashboard.tabExpenses": "Expenses Tracker",
     "dashboard.tabTax": "Tax Tracker",
     "dashboard.subtitle":
@@ -379,6 +380,7 @@ export const translations = {
     "footer.rights": "Hak cipta terpelihara.",
 
     "dashboard.title": "Resit anda",
+    "dashboard.globalFilter": "Menunjukkan data untuk:",
     "dashboard.tabExpenses": "Penjejak Perbelanjaan",
     "dashboard.tabTax": "Penjejak Cukai",
     "dashboard.subtitle":

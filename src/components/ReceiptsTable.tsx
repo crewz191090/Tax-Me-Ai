@@ -18,9 +18,13 @@ const PAGE_SIZE = 10;
 export default function ReceiptsTable({
   receipts,
   onChange,
+  month,
+  year,
 }: {
   receipts: Receipt[];
   onChange: (receipts: Receipt[]) => void;
+  month: number;
+  year: number;
 }) {
   const { lang, t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,9 +34,19 @@ export default function ReceiptsTable({
   const [page, setPage] = useState(1);
 
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
+  // Filtered to the global month/year for display only — every mutation
+  // below (delete/edit) still reads and writes against the full `receipts`
+  // prop so other months' data is never dropped from state.
   const sortedReceipts = useMemo(
-    () => [...receipts].sort((a, b) => b.date.localeCompare(a.date)),
-    [receipts]
+    () =>
+      receipts
+        .filter((r) => {
+          const y = Number(r.date.slice(0, 4));
+          const m = Number(r.date.slice(5, 7));
+          return y === year && m === month;
+        })
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [receipts, year, month]
   );
 
   const totalPages = Math.max(1, Math.ceil(sortedReceipts.length / PAGE_SIZE));
@@ -77,7 +91,7 @@ export default function ReceiptsTable({
     );
   }
 
-  if (receipts.length === 0) {
+  if (sortedReceipts.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">
         {t("table.empty")}

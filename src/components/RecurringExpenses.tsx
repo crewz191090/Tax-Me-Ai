@@ -4,9 +4,22 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { getSubcategory } from "@/lib/expenseCategories";
 import type { Receipt } from "@/lib/types";
 
-export default function RecurringExpenses({ receipts }: { receipts: Receipt[] }) {
+export default function RecurringExpenses({
+  receipts,
+  month,
+  year,
+}: {
+  receipts: Receipt[];
+  month: number;
+  year: number;
+}) {
   const { lang, t } = useLanguage();
-  const recurring = receipts.filter((r) => r.isRecurring && r.type === "expense");
+  const recurring = receipts.filter((r) => {
+    if (!r.isRecurring || r.type !== "expense") return false;
+    const y = Number(r.date.slice(0, 4));
+    const m = Number(r.date.slice(5, 7));
+    return y === year && m === month;
+  });
 
   const monthlyTotal = recurring.reduce((sum, r) => sum + r.amount, 0);
 

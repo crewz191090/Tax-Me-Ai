@@ -40,10 +40,12 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<"expenses" | "tax">("expenses");
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [year, setYear] = useState(new Date().getFullYear());
   const now = new Date();
-  const [exportMonth, setExportMonth] = useState(now.getMonth() + 1);
-  const [exportYear, setExportYear] = useState(now.getFullYear());
+  // The single global filter — every component on the dashboard reads this
+  // same month/year instead of managing its own, so picking a month here
+  // changes what's shown everywhere at once.
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncErrors, setSyncErrors] = useState<SyncFailure[]>([]);
@@ -119,14 +121,14 @@ export default function DashboardPage() {
   }
 
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
-  const exportAvailableYears = (() => {
+  const availableYears = (() => {
     const years = new Set(yearsWithReceipts(receipts));
-    years.add(exportYear);
+    years.add(year);
     return Array.from(years).sort((a, b) => b - a);
   })();
 
   function handleExportPdf() {
-    downloadMonthlyExpensePdf(receipts, exportYear, exportMonth, monthNames[exportMonth - 1], lang);
+    downloadMonthlyExpensePdf(receipts, year, month, monthNames[month - 1], lang);
   }
 
   if (authLoading || !user) {
@@ -145,7 +147,7 @@ export default function DashboardPage() {
       <Header />
       <main className="flex-1 bg-grid">
         <div className="mx-auto max-w-5xl px-6 py-12">
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
                 {t("dashboard.title")}
@@ -154,28 +156,6 @@ export default function DashboardPage() {
             </div>
             {receipts.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
-                <select
-                  value={exportMonth}
-                  onChange={(e) => setExportMonth(Number(e.target.value))}
-                  className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-                >
-                  {monthNames.map((name, i) => (
-                    <option key={name} value={i + 1}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={exportYear}
-                  onChange={(e) => setExportYear(Number(e.target.value))}
-                  className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-                >
-                  {exportAvailableYears.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
                 <button onClick={handleExportPdf} className="btn-pill btn-pill-outline">
                   📄 {t("expenses.exportPdf")}
                 </button>
@@ -184,6 +164,32 @@ export default function DashboardPage() {
                 </button>
               </div>
             )}
+          </div>
+
+          <div className="mb-8 flex flex-wrap items-center gap-2 rounded-xl border border-accent/30 bg-surface-2/50 px-4 py-3">
+            <span className="text-xs font-medium text-muted">{t("dashboard.globalFilter")}</span>
+            <select
+              value={month}
+              onChange={(e) => setMonth(Number(e.target.value))}
+              className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+            >
+              {monthNames.map((name, i) => (
+                <option key={name} value={i + 1}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+            >
+              {availableYears.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
           </div>
 
           <SyncStatusBanner
@@ -234,38 +240,50 @@ export default function DashboardPage() {
               {tab === "expenses" && (
                 <>
                   <div className="mb-6">
-                    <SummaryBar receipts={receipts} />
+                    <SummaryBar receipts={receipts} month={month} year={year} />
                   </div>
                   <div className="mb-6">
-                    <ExpensesOverview receipts={receipts} />
+                    <ExpensesOverview receipts={receipts} month={month} year={year} />
                   </div>
                   <div className="mb-6">
-                    <CashFlowSummary receipts={receipts} incomeEntries={incomeEntries} />
+                    <CashFlowSummary
+                      receipts={receipts}
+                      incomeEntries={incomeEntries}
+                      month={month}
+                      year={year}
+                    />
                   </div>
                   <div className="mb-6">
                     <BudgetTracker
                       receipts={receipts}
                       entries={incomeEntries}
                       onEntriesChange={setIncomeEntries}
+                      month={month}
+                      year={year}
                     />
                   </div>
                   <div className="mb-6">
                     <AiInsights
                       receipts={receipts}
                       incomeEntries={incomeEntries}
-                      period={{ type: "year", year }}
-                      periodLabel={String(year)}
+                      period={{ type: "month", year, month }}
+                      periodLabel={`${monthNames[month - 1]} ${year}`}
                     />
                   </div>
                   <div className="mb-6">
-                    <RecurringExpenses receipts={receipts} />
+                    <RecurringExpenses receipts={receipts} month={month} year={year} />
                   </div>
-                  <ReceiptsTable receipts={receipts} onChange={setReceipts} />
+                  <ReceiptsTable
+                    receipts={receipts}
+                    onChange={setReceipts}
+                    month={month}
+                    year={year}
+                  />
                 </>
               )}
 
               {tab === "tax" && (
-                <ReliefSummary receipts={receipts} year={year} onYearChange={setYear} />
+                <ReliefSummary receipts={receipts} month={month} year={year} />
               )}
             </>
           )}

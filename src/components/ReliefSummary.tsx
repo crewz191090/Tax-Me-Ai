@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { computeReliefSummary, getReliefAlerts, yearsWithReceipts } from "@/lib/reliefCalc";
+import { computeReliefSummary, getReliefAlerts } from "@/lib/reliefCalc";
 import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
 import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import ReliefGauge from "./ReliefGauge";
@@ -16,20 +15,16 @@ const TOTAL_RELIEF_CAP = RELIEF_CATEGORIES.filter((c) => c.cap > 0).reduce(
 
 export default function ReliefSummary({
   receipts,
+  month,
   year,
-  onYearChange,
 }: {
   receipts: Receipt[];
+  month: number;
   year: number;
-  onYearChange: (year: number) => void;
 }) {
   const { lang, t } = useLanguage();
-  const [month, setMonth] = useState<number | null>(null);
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
 
-  const years = new Set(yearsWithReceipts(receipts));
-  years.add(year);
-  const availableYears = Array.from(years).sort((a, b) => b - a);
   const summary = computeReliefSummary(receipts, year, month);
   const rowsWithSpend = summary.rows.filter((r) => r.spent > 0);
   const alerts = getReliefAlerts(summary.rows);
@@ -38,32 +33,9 @@ export default function ReliefSummary({
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">{t("dashboard.reliefSummary")}</h2>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-          <span>{t("dashboard.reliefSummaryFor")}</span>
-          <select
-            value={month ?? ""}
-            onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : null)}
-            className="rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-foreground outline-none"
-          >
-            <option value="">{t("relief.allYear")}</option>
-            {monthNames.map((name, i) => (
-              <option key={name} value={i + 1}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={year}
-            onChange={(e) => onYearChange(Number(e.target.value))}
-            className="rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-foreground outline-none"
-          >
-            {availableYears.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-        </div>
+        <span className="text-xs text-muted">
+          {t("dashboard.reliefSummaryFor")} {monthNames[month - 1]} {year}
+        </span>
       </div>
 
       {alerts.length > 0 && (

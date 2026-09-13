@@ -6,29 +6,24 @@ import {
   computeCategoryBreakdown,
   computeMonthlyTrend,
   computeYearlyTrend,
-  yearsWithReceipts,
   type Period,
 } from "@/lib/reliefCalc";
 import CategoryPieChart from "./CategoryPieChart";
 import SpendingTrendChart from "./SpendingTrendChart";
-import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import type { Receipt } from "@/lib/types";
 
-const currentYear = new Date().getFullYear();
-const currentMonth = new Date().getMonth() + 1;
-
-export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) {
+export default function ExpensesOverview({
+  receipts,
+  month,
+  year,
+}: {
+  receipts: Receipt[];
+  month: number;
+  year: number;
+}) {
   const { lang, t } = useLanguage();
 
   const [view, setView] = useState<"month" | "year">("month");
-  const [year, setYear] = useState(currentYear);
-  const [month, setMonth] = useState(currentMonth);
-
-  const availableYears = useMemo(() => {
-    const years = new Set(yearsWithReceipts(receipts));
-    years.add(currentYear);
-    return Array.from(years).sort((a, b) => b - a);
-  }, [receipts]);
 
   const breakdown = useMemo(() => {
     const period: Period =
@@ -43,8 +38,6 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
         : computeYearlyTrend(receipts),
     [receipts, view, year, lang]
   );
-
-  const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
 
   return (
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
@@ -70,34 +63,7 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
           </button>
         </div>
       </div>
-      <p className="mb-5 text-sm text-muted">{t("expenses.subtitle")}</p>
-
-      <div className="mb-6 flex flex-wrap gap-2">
-        {view === "month" && (
-          <select
-            value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-          >
-            {monthNames.map((name, i) => (
-              <option key={name} value={i + 1}>
-                {name}
-              </option>
-            ))}
-          </select>
-        )}
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-        >
-          {availableYears.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-      </div>
+      <p className="mb-6 text-sm text-muted">{t("expenses.subtitle")}</p>
 
       <div className="grid gap-8 lg:grid-cols-2">
         <div>

@@ -1,23 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { computeReliefSummary, yearsWithReceipts } from "@/lib/reliefCalc";
+import { computeReliefSummary } from "@/lib/reliefCalc";
 import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import type { Receipt } from "@/lib/types";
 
-export default function SummaryBar({ receipts }: { receipts: Receipt[] }) {
+export default function SummaryBar({
+  receipts,
+  month,
+  year,
+}: {
+  receipts: Receipt[];
+  month: number;
+  year: number;
+}) {
   const { lang, t } = useLanguage();
-  const now = new Date();
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year, setYear] = useState(now.getFullYear());
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
-
-  const availableYears = useMemo(() => {
-    const years = new Set(yearsWithReceipts(receipts));
-    years.add(year);
-    return Array.from(years).sort((a, b) => b - a);
-  }, [receipts, year]);
 
   const monthReceipts = useMemo(
     () =>
@@ -37,31 +36,9 @@ export default function SummaryBar({ receipts }: { receipts: Receipt[] }) {
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <select
-          value={month}
-          onChange={(e) => setMonth(Number(e.target.value))}
-          className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-        >
-          {monthNames.map((name, i) => (
-            <option key={name} value={i + 1}>
-              {name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-        >
-          {availableYears.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-muted">{t("summary.for")} {periodLabel}</span>
-      </div>
+      <p className="mb-3 text-xs text-muted">
+        {t("summary.for")} {periodLabel}
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-border bg-surface p-5">

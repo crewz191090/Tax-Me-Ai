@@ -1,31 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
-import { yearsWithReceipts } from "@/lib/reliefCalc";
 import type { IncomeEntry, Receipt } from "@/lib/types";
 
 export default function CashFlowSummary({
   receipts,
   incomeEntries,
+  month,
+  year,
 }: {
   receipts: Receipt[];
   incomeEntries: IncomeEntry[];
+  month: number;
+  year: number;
 }) {
   const { lang, t } = useLanguage();
-  const now = new Date();
   const [view, setView] = useState<"month" | "year">("month");
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year, setYear] = useState(now.getFullYear());
-
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
-
-  const availableYears = useMemo(() => {
-    const years = new Set(yearsWithReceipts(receipts));
-    years.add(year);
-    return Array.from(years).sort((a, b) => b - a);
-  }, [receipts, year]);
 
   let income = 0;
   let expense = 0;
@@ -78,36 +71,9 @@ export default function CashFlowSummary({
         </div>
       </div>
 
-      <p className="mb-3 text-sm text-muted">
+      <p className="mb-5 text-sm text-muted">
         {t("cashflow.subtitle")} {periodLabel}
       </p>
-
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        {view === "month" && (
-          <select
-            value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-          >
-            {monthNames.map((name, i) => (
-              <option key={name} value={i + 1}>
-                {name}
-              </option>
-            ))}
-          </select>
-        )}
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
-        >
-          {availableYears.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg bg-surface-2 p-4">
