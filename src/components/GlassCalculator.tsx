@@ -23,6 +23,18 @@ function trimNumber(n: number): string {
   return Number.isInteger(rounded) ? String(rounded) : String(rounded);
 }
 
+// Thousand-separator display only — the underlying numeric state stays a
+// plain string so parseFloat/arithmetic never has to deal with commas.
+function withCommas(raw: string): string {
+  if (!raw) return raw;
+  const negative = raw.startsWith("-");
+  const unsigned = negative ? raw.slice(1) : raw;
+  const [intPart, decPart] = unsigned.split(".");
+  const groupedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const grouped = decPart !== undefined ? `${groupedInt}.${decPart}` : groupedInt;
+  return negative ? `-${grouped}` : grouped;
+}
+
 export default function GlassCalculator({
   initial,
   onChange,
@@ -67,12 +79,12 @@ export default function GlassCalculator({
     if (previous !== null && operator && !overwrite) {
       const result = compute(previous, currentNum, operator);
       setPrevious(result);
-      setExpression(`${trimNumber(result)} ${op}`);
+      setExpression(`${withCommas(trimNumber(result))} ${op}`);
       setCurrent(trimNumber(result));
       emit(trimNumber(result));
     } else {
       setPrevious(currentNum);
-      setExpression(`${trimNumber(currentNum)} ${op}`);
+      setExpression(`${withCommas(trimNumber(currentNum))} ${op}`);
     }
     setOperator(op);
     setOverwrite(true);
@@ -82,7 +94,9 @@ export default function GlassCalculator({
     if (previous === null || operator === null) return;
     const currentNum = parseFloat(current) || 0;
     const result = compute(previous, currentNum, operator);
-    setExpression(`${trimNumber(previous)} ${operator} ${trimNumber(currentNum)} =`);
+    setExpression(
+      `${withCommas(trimNumber(previous))} ${operator} ${withCommas(trimNumber(currentNum))} =`
+    );
     setCurrent(trimNumber(result));
     setPrevious(null);
     setOperator(null);
@@ -123,6 +137,7 @@ export default function GlassCalculator({
   }
 
   return (
+    <div className="glass-calc-overlay" onClick={onClose}>
     <div className="glass-calc" onClick={(e) => e.stopPropagation()}>
       <div className="glass-calc-header">
         <span>{t("upload.calculatorTitle")}</span>
@@ -133,7 +148,7 @@ export default function GlassCalculator({
 
       <div className="glass-calc-display">
         <div className="glass-calc-expression">{expression || " "}</div>
-        <div className="glass-calc-current">{current}</div>
+        <div className="glass-calc-current">{withCommas(current)}</div>
       </div>
 
       <div className="glass-calc-grid">
@@ -218,6 +233,7 @@ export default function GlassCalculator({
           =
         </button>
       </div>
+    </div>
     </div>
   );
 }
