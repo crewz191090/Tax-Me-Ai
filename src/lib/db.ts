@@ -15,8 +15,10 @@ export async function insertReceipt(userId: string, receipt: Receipt): Promise<v
   const env = await getCfEnv();
   await env.DB.prepare(
     `INSERT INTO receipts
-      (id, user_id, merchant, date, amount, category, notes, image_key, is_e_invoice, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (id, user_id, merchant, date, amount, main_category, subcategory, relief_category,
+       type, payment_method, account_name, tags, is_recurring, location,
+       notes, image_key, is_e_invoice, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       receipt.id,
@@ -24,7 +26,15 @@ export async function insertReceipt(userId: string, receipt: Receipt): Promise<v
       receipt.merchant,
       receipt.date,
       receipt.amount,
-      receipt.category,
+      receipt.mainCategory,
+      receipt.subcategory,
+      receipt.reliefCategory,
+      receipt.type,
+      receipt.paymentMethod ?? null,
+      receipt.accountName ?? null,
+      receipt.tags ?? null,
+      receipt.isRecurring ? 1 : 0,
+      receipt.location ?? null,
       receipt.notes ?? null,
       receipt.imageKey ?? null,
       receipt.isEInvoice ? 1 : 0,
@@ -36,31 +46,54 @@ export async function insertReceipt(userId: string, receipt: Receipt): Promise<v
 export async function updateReceiptFields(
   userId: string,
   id: string,
-  updates: Partial<Pick<Receipt, "merchant" | "date" | "amount" | "category" | "notes">>
+  updates: Partial<
+    Pick<
+      Receipt,
+      | "merchant"
+      | "date"
+      | "amount"
+      | "mainCategory"
+      | "subcategory"
+      | "reliefCategory"
+      | "type"
+      | "paymentMethod"
+      | "accountName"
+      | "tags"
+      | "isRecurring"
+      | "location"
+      | "notes"
+    >
+  >
 ): Promise<void> {
   const env = await getCfEnv();
   const fields: string[] = [];
   const values: (string | number | null)[] = [];
 
-  if (updates.merchant !== undefined) {
-    fields.push("merchant = ?");
-    values.push(updates.merchant);
-  }
-  if (updates.date !== undefined) {
-    fields.push("date = ?");
-    values.push(updates.date);
-  }
-  if (updates.amount !== undefined) {
-    fields.push("amount = ?");
-    values.push(updates.amount);
-  }
-  if (updates.category !== undefined) {
-    fields.push("category = ?");
-    values.push(updates.category);
-  }
-  if (updates.notes !== undefined) {
-    fields.push("notes = ?");
-    values.push(updates.notes);
+  const columnMap: Record<string, string> = {
+    merchant: "merchant",
+    date: "date",
+    amount: "amount",
+    mainCategory: "main_category",
+    subcategory: "subcategory",
+    reliefCategory: "relief_category",
+    type: "type",
+    paymentMethod: "payment_method",
+    accountName: "account_name",
+    tags: "tags",
+    isRecurring: "is_recurring",
+    location: "location",
+    notes: "notes",
+  };
+
+  for (const [key, column] of Object.entries(columnMap)) {
+    const value = (updates as Record<string, unknown>)[key];
+    if (value === undefined) continue;
+    fields.push(`${column} = ?`);
+    if (key === "isRecurring") {
+      values.push(value ? 1 : 0);
+    } else {
+      values.push(value as string | number | null);
+    }
   }
 
   if (fields.length === 0) return;

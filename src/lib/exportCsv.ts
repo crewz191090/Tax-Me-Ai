@@ -1,5 +1,6 @@
 import { claimableForReceipt } from "./reliefCalc";
 import { getReliefCategory } from "./reliefCategories";
+import { getSubcategory } from "./expenseCategories";
 import type { Receipt } from "./types";
 
 function escapeCsvField(value: string | number): string {
@@ -15,23 +16,38 @@ export function receiptsToCsv(receipts: Receipt[]): string {
     "Date",
     "Merchant",
     "Amount (RM)",
+    "Type",
+    "Category",
+    "Subcategory",
     "Relief category",
-    "Category annual cap (RM)",
     "Claimable (RM)",
+    "Payment method",
+    "Account",
+    "Tags",
+    "Recurring",
+    "Location",
     "e-Invoice",
     "Notes",
   ];
 
   const rows = receipts.map((r) => {
-    const category = getReliefCategory(r.category);
+    const sub = getSubcategory(r.subcategory);
     const claimable = claimableForReceipt(r);
+    const reliefName = r.reliefCategory ? getReliefCategory(r.reliefCategory).nameEn : "";
     return [
       r.date,
       r.merchant,
       r.amount.toFixed(2),
-      category.nameEn,
-      category.cap.toString(),
+      r.type,
+      sub?.category.nameEn ?? "",
+      sub?.subcategory.nameEn ?? "",
+      reliefName,
       claimable.toFixed(2),
+      r.paymentMethod ?? "",
+      r.accountName ?? "",
+      r.tags ?? "",
+      r.isRecurring ? "Yes" : "No",
+      r.location ?? "",
       r.isEInvoice ? "Yes" : "No",
       r.notes ?? "",
     ]

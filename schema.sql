@@ -1,3 +1,7 @@
+-- Canonical schema for a fresh database. If you're migrating an existing
+-- database, use the numbered files in migrations/ instead — this file
+-- assumes no data exists yet in these tables.
+
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
@@ -30,7 +34,15 @@ CREATE TABLE IF NOT EXISTS receipts (
   merchant TEXT NOT NULL,
   date TEXT NOT NULL,
   amount REAL NOT NULL,
-  category TEXT NOT NULL,
+  main_category TEXT NOT NULL DEFAULT 'other',
+  subcategory TEXT NOT NULL DEFAULT 'uncategorized',
+  relief_category TEXT,
+  type TEXT NOT NULL DEFAULT 'expense',
+  payment_method TEXT,
+  account_name TEXT,
+  tags TEXT,
+  is_recurring INTEGER NOT NULL DEFAULT 0,
+  location TEXT,
   notes TEXT,
   image_key TEXT,
   is_e_invoice INTEGER NOT NULL DEFAULT 0,
@@ -40,3 +52,5 @@ CREATE TABLE IF NOT EXISTS receipts (
 CREATE INDEX IF NOT EXISTS idx_receipts_user_id ON receipts (user_id);
 CREATE INDEX IF NOT EXISTS idx_receipts_date ON receipts (date);
 CREATE INDEX IF NOT EXISTS idx_receipts_created_at ON receipts (created_at);
+CREATE INDEX IF NOT EXISTS idx_receipts_main_category ON receipts (main_category);
+CREATE INDEX IF NOT EXISTS idx_receipts_type ON receipts (type);

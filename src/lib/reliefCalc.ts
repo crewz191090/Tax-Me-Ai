@@ -1,4 +1,5 @@
 import { RELIEF_CATEGORIES, getReliefCategory } from "./reliefCategories";
+import { getExpenseCategory, getSubcategory } from "./expenseCategories";
 import type { Receipt } from "./types";
 
 export interface ReliefRow {
@@ -30,10 +31,11 @@ export function computeReliefSummary(
   const spentByCategory = new Map<string, number>();
 
   for (const receipt of receipts) {
+    if (!receipt.reliefCategory) continue;
     const receiptYear = Number(receipt.date.slice(0, 4));
     if (receiptYear !== year) continue;
-    const current = spentByCategory.get(receipt.category) ?? 0;
-    spentByCategory.set(receipt.category, current + receipt.amount);
+    const current = spentByCategory.get(receipt.reliefCategory) ?? 0;
+    spentByCategory.set(receipt.reliefCategory, current + receipt.amount);
   }
 
   const rows: ReliefRow[] = RELIEF_CATEGORIES.filter((c) => c.cap > 0).map(
@@ -59,7 +61,8 @@ export function computeReliefSummary(
 }
 
 export function claimableForReceipt(receipt: Receipt): number {
-  const cap = getReliefCategory(receipt.category).cap;
+  if (!receipt.reliefCategory) return 0;
+  const cap = getReliefCategory(receipt.reliefCategory).cap;
   return cap > 0 ? receipt.amount : 0;
 }
 
@@ -81,36 +84,43 @@ export interface CategoryBreakdownRow {
   categoryId: string;
   nameEn: string;
   nameBm: string;
+  emoji: string;
   amount: number;
   isDeductible: boolean;
 }
 
 /**
- * Spending grouped by category for a given period — includes every
- * category with any spend, including non-deductible personal spending,
- * since this powers the general expense-tracking view (not just relief).
+ * Spending grouped by main expense category for a given period — this
+ * powers the general expense-tracking view, independent of tax relief.
+ * Only `type: "expense"` receipts are included (income/transfers excluded).
  */
 export function computeCategoryBreakdown(
   receipts: Receipt[],
   period: Period
 ): CategoryBreakdownRow[] {
   const amountByCategory = new Map<string, number>();
+  const deductibleByCategory = new Map<string, boolean>();
 
   for (const receipt of receipts) {
+    if (receipt.type !== "expense") continue;
     if (!receiptInPeriod(receipt, period)) continue;
-    const current = amountByCategory.get(receipt.category) ?? 0;
-    amountByCategory.set(receipt.category, current + receipt.amount);
+    const current = amountByCategory.get(receipt.mainCategory) ?? 0;
+    amountByCategory.set(receipt.mainCategory, current + receipt.amount);
+    if (receipt.reliefCategory) {
+      deductibleByCategory.set(receipt.mainCategory, true);
+    }
   }
 
   const rows: CategoryBreakdownRow[] = [];
   for (const [categoryId, amount] of amountByCategory) {
-    const category = getReliefCategory(categoryId);
+    const category = getExpenseCategory(categoryId);
     rows.push({
       categoryId,
       nameEn: category.nameEn,
       nameBm: category.nameBm,
+      emoji: category.emoji,
       amount,
-      isDeductible: category.cap > 0,
+      isDeductible: deductibleByCategory.get(categoryId) ?? false,
     });
   }
 
@@ -140,6 +150,7 @@ export function computeMonthlyTrend(
   const totals = new Array(12).fill(0) as number[];
 
   for (const receipt of receipts) {
+    if (receipt.type !== "expense") continue;
     const receiptYear = Number(receipt.date.slice(0, 4));
     if (receiptYear !== year) continue;
     const monthIndex = Number(receipt.date.slice(5, 7)) - 1;
@@ -155,6 +166,7 @@ export function computeYearlyTrend(receipts: Receipt[]): TrendPoint[] {
   const totals = new Map<number, number>();
 
   for (const receipt of receipts) {
+    if (receipt.type !== "expense") continue;
     const year = Number(receipt.date.slice(0, 4));
     totals.set(year, (totals.get(year) ?? 0) + receipt.amount);
   }
@@ -163,3 +175,5 @@ export function computeYearlyTrend(receipts: Receipt[]): TrendPoint[] {
     .sort(([a], [b]) => a - b)
     .map(([year, total]) => ({ label: String(year), key: year, total }));
 }
+
+export { getSubcategory };

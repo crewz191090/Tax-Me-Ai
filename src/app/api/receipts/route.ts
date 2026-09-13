@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { insertReceipt, listReceipts, newReceiptId } from "@/lib/db";
 import { uploadReceiptImage } from "@/lib/storage";
 import { RELIEF_CATEGORY_IDS } from "@/lib/reliefCategories";
+import {
+  ALL_SUBCATEGORY_IDS,
+  mainCategoryForSubcategory,
+  type TransactionType,
+} from "@/lib/expenseCategories";
 import { getSessionUser } from "@/lib/auth/session";
 import type { Receipt } from "@/lib/types";
 
@@ -9,6 +14,7 @@ export const runtime = "nodejs";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const TRANSACTION_TYPES: TransactionType[] = ["expense", "income", "transfer"];
 
 export async function GET() {
   const user = await getSessionUser();
@@ -37,11 +43,31 @@ export async function POST(req: NextRequest) {
     const merchant = String(formData.get("merchant") ?? "").trim();
     const date = String(formData.get("date") ?? "");
     const amount = parseFloat(String(formData.get("amount") ?? "0"));
-    const rawCategory = String(formData.get("category") ?? "not_deductible");
-    const category = RELIEF_CATEGORY_IDS.includes(rawCategory)
-      ? rawCategory
-      : "not_deductible";
+
+    const rawSubcategory = String(formData.get("subcategory") ?? "uncategorized");
+    const subcategory = ALL_SUBCATEGORY_IDS.includes(rawSubcategory)
+      ? rawSubcategory
+      : "uncategorized";
+    const mainCategory = mainCategoryForSubcategory(subcategory);
+
+    const rawReliefCategory = formData.get("reliefCategory");
+    const reliefCategory =
+      typeof rawReliefCategory === "string" && RELIEF_CATEGORY_IDS.includes(rawReliefCategory)
+        ? rawReliefCategory
+        : null;
+
+    const rawType = String(formData.get("type") ?? "expense");
+    const type: TransactionType = TRANSACTION_TYPES.includes(rawType as TransactionType)
+      ? (rawType as TransactionType)
+      : "expense";
+
+    const paymentMethod = formData.get("paymentMethod");
+    const accountName = formData.get("accountName");
+    const tags = formData.get("tags");
+    const location = formData.get("location");
+    const isRecurring = String(formData.get("isRecurring") ?? "false") === "true";
     const isEInvoice = String(formData.get("isEInvoice") ?? "false") === "true";
+    const notes = formData.get("notes");
     const file = formData.get("file");
 
     if (!merchant || !date || Number.isNaN(amount)) {
@@ -83,7 +109,16 @@ export async function POST(req: NextRequest) {
       merchant,
       date,
       amount,
-      category,
+      mainCategory,
+      subcategory,
+      reliefCategory,
+      type,
+      paymentMethod: typeof paymentMethod === "string" ? paymentMethod : null,
+      accountName: typeof accountName === "string" ? accountName : null,
+      tags: typeof tags === "string" ? tags : null,
+      isRecurring,
+      location: typeof location === "string" ? location : null,
+      notes: typeof notes === "string" ? notes : undefined,
       imageKey,
       isEInvoice,
       createdAt: new Date().toISOString(),

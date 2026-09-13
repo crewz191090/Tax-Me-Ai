@@ -1,12 +1,18 @@
 import { GoogleGenerativeAI, SchemaType, type ObjectSchema } from "@google/generative-ai";
+import { EXPENSE_CATEGORIES, ALL_SUBCATEGORY_IDS } from "./expenseCategories";
 import { RELIEF_CATEGORIES } from "./reliefCategories";
 import type { ExtractedReceipt } from "./types";
 
-const CATEGORY_IDS = RELIEF_CATEGORIES.map((c) => c.id);
+const RELIEF_CATEGORY_IDS = RELIEF_CATEGORIES.map((c) => c.id);
 
-const CATEGORY_GUIDE = RELIEF_CATEGORIES.map(
-  (c) => `- "${c.id}": ${c.descriptionEn}`
+const SUBCATEGORY_GUIDE = EXPENSE_CATEGORIES.map(
+  (cat) =>
+    `${cat.nameEn} (${cat.id}): ${cat.subcategories.map((s) => `"${s.id}"`).join(", ")}`
 ).join("\n");
+
+const RELIEF_GUIDE = RELIEF_CATEGORIES.filter((c) => c.cap > 0)
+  .map((c) => `- "${c.id}": ${c.descriptionEn}`)
+  .join("\n");
 
 const EXTRACTION_SCHEMA: ObjectSchema = {
   type: SchemaType.OBJECT,
@@ -23,11 +29,17 @@ const EXTRACTION_SCHEMA: ObjectSchema = {
       type: SchemaType.NUMBER,
       description: "The total amount paid, as a plain number (no currency symbol).",
     },
-    category: {
+    subcategory: {
       type: SchemaType.STRING,
       format: "enum",
-      description: `Best matching Malaysian LHDN individual tax relief category id. Must be exactly one of the ids listed below. Use "not_deductible" if nothing matches:\n${CATEGORY_GUIDE}`,
-      enum: CATEGORY_IDS,
+      description: `Best matching general expense subcategory id, grouped by main category below. Pick the single best subcategory id:\n${SUBCATEGORY_GUIDE}`,
+      enum: ALL_SUBCATEGORY_IDS,
+    },
+    reliefCategoryOrNone: {
+      type: SchemaType.STRING,
+      format: "enum",
+      description: `Malaysian LHDN individual tax relief category id if this expense qualifies for a specific relief, otherwise "none":\n${RELIEF_GUIDE}`,
+      enum: [...RELIEF_CATEGORY_IDS, "none"],
     },
     isEInvoice: {
       type: SchemaType.BOOLEAN,
@@ -35,7 +47,7 @@ const EXTRACTION_SCHEMA: ObjectSchema = {
         "True only if this looks like a Malaysian LHDN MyInvois e-invoice (has a validation/QR reference or explicit e-invoice marking).",
     },
   },
-  required: ["merchant", "date", "amount", "category"],
+  required: ["merchant", "date", "amount", "subcategory", "reliefCategoryOrNone"],
 };
 
 export async function extractReceiptFromImage(params: {
@@ -66,18 +78,31 @@ export async function extractReceiptFromImage(params: {
       },
     },
     {
-      text: `You are reading a Malaysian receipt or invoice to help an individual taxpayer track expenses that qualify for LHDN personal income tax relief (Year of Assessment 2025). Extract the merchant name, transaction date, and total amount. Then classify the expense into the single best-matching relief category id from this list:\n\n${CATEGORY_GUIDE}\n\nIf the receipt is general personal spending (groceries, entertainment, clothing, etc.) that does not match any relief, use "not_deductible". If it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
+      text: `You are reading a Malaysian receipt or invoice for a personal expense tracker. Extract the merchant name, transaction date, and total amount. Classify the expense into the single best-matching general expense subcategory id from this list:\n\n${SUBCATEGORY_GUIDE}\n\nSeparately, check whether this expense also qualifies for a specific LHDN individual income tax relief category (Year of Assessment 2025). If it clearly matches one of these, return its id; otherwise return "none":\n\n${RELIEF_GUIDE}\n\nIf it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
     },
   ]);
 
   const text = result.response.text();
-  const parsed = JSON.parse(text) as ExtractedReceipt;
+  const parsed = JSON.parse(text) as {
+    merchant: string;
+    date: string;
+    amount: number;
+    subcategory: string;
+    reliefCategoryOrNone: string;
+    isEInvoice?: boolean;
+  };
 
   return {
     merchant: parsed.merchant || "Unknown merchant",
     date: parsed.date || new Date().toISOString().slice(0, 10),
     amount: typeof parsed.amount === "number" ? parsed.amount : 0,
-    category: CATEGORY_IDS.includes(parsed.category) ? parsed.category : "not_deductible",
+    subcategory: ALL_SUBCATEGORY_IDS.includes(parsed.subcategory)
+      ? parsed.subcategory
+      : "uncategorized",
+    reliefCategory:
+      parsed.reliefCategoryOrNone && parsed.reliefCategoryOrNone !== "none"
+        ? parsed.reliefCategoryOrNone
+        : null,
     isEInvoice: Boolean(parsed.isEInvoice),
   };
 }

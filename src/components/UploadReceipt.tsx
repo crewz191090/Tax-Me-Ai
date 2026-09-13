@@ -2,10 +2,30 @@
 
 import { useRef, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import {
+  EXPENSE_CATEGORIES,
+  PAYMENT_METHODS,
+  type TransactionType,
+} from "@/lib/expenseCategories";
 import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
 import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
+
+interface Draft {
+  merchant: string;
+  date: string;
+  amount: number;
+  subcategory: string;
+  reliefCategory: string | null;
+  isEInvoice: boolean;
+  type: TransactionType;
+  paymentMethod: string;
+  accountName: string;
+  tags: string;
+  isRecurring: boolean;
+  location: string;
+}
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -14,6 +34,23 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function draftFromExtracted(extracted: ExtractedReceipt): Draft {
+  return {
+    merchant: extracted.merchant,
+    date: extracted.date,
+    amount: extracted.amount,
+    subcategory: extracted.subcategory,
+    reliefCategory: extracted.reliefCategory,
+    isEInvoice: Boolean(extracted.isEInvoice),
+    type: "expense",
+    paymentMethod: "",
+    accountName: "",
+    tags: "",
+    isRecurring: false,
+    location: "",
+  };
 }
 
 export default function UploadReceipt({
@@ -26,7 +63,8 @@ export default function UploadReceipt({
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [draft, setDraft] = useState<ExtractedReceipt | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [showMore, setShowMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -56,7 +94,7 @@ export default function UploadReceipt({
         throw new Error(json.error || "Failed to scan receipt.");
       }
 
-      setDraft(json.extracted as ExtractedReceipt);
+      setDraft(draftFromExtracted(json.extracted as ExtractedReceipt));
       setStatus("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -86,8 +124,15 @@ export default function UploadReceipt({
       formData.append("merchant", draft.merchant);
       formData.append("date", draft.date);
       formData.append("amount", String(draft.amount));
-      formData.append("category", draft.category);
-      formData.append("isEInvoice", String(Boolean(draft.isEInvoice)));
+      formData.append("subcategory", draft.subcategory);
+      if (draft.reliefCategory) formData.append("reliefCategory", draft.reliefCategory);
+      formData.append("type", draft.type);
+      formData.append("isEInvoice", String(draft.isEInvoice));
+      if (draft.paymentMethod) formData.append("paymentMethod", draft.paymentMethod);
+      if (draft.accountName) formData.append("accountName", draft.accountName);
+      if (draft.tags) formData.append("tags", draft.tags);
+      formData.append("isRecurring", String(draft.isRecurring));
+      if (draft.location) formData.append("location", draft.location);
       if (file) formData.append("file", file);
 
       const res = await fetch("/api/receipts", {
@@ -118,6 +163,7 @@ export default function UploadReceipt({
     setPreview(null);
     setFile(null);
     setDraft(null);
+    setShowMore(false);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -201,9 +247,7 @@ export default function UploadReceipt({
               {t("upload.merchant")}
               <input
                 value={draft.merchant}
-                onChange={(e) =>
-                  setDraft({ ...draft, merchant: e.target.value })
-                }
+                onChange={(e) => setDraft({ ...draft, merchant: e.target.value })}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
               />
             </label>
@@ -214,9 +258,7 @@ export default function UploadReceipt({
                 <input
                   type="date"
                   value={draft.date}
-                  onChange={(e) =>
-                    setDraft({ ...draft, date: e.target.value })
-                  }
+                  onChange={(e) => setDraft({ ...draft, date: e.target.value })}
                   className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
                 />
               </label>
@@ -234,16 +276,55 @@ export default function UploadReceipt({
               </label>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-xs text-muted">
+                {t("upload.subcategory")}
+                <select
+                  value={draft.subcategory}
+                  onChange={(e) => setDraft({ ...draft, subcategory: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                >
+                  {EXPENSE_CATEGORIES.map((cat) => (
+                    <optgroup
+                      key={cat.id}
+                      label={`${cat.emoji} ${lang === "bm" ? cat.nameBm : cat.nameEn}`}
+                    >
+                      {cat.subcategories.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {lang === "bm" ? sub.nameBm : sub.nameEn}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-muted">
+                {t("upload.type")}
+                <select
+                  value={draft.type}
+                  onChange={(e) =>
+                    setDraft({ ...draft, type: e.target.value as TransactionType })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                >
+                  <option value="expense">{t("upload.typeExpense")}</option>
+                  <option value="income">{t("upload.typeIncome")}</option>
+                  <option value="transfer">{t("upload.typeTransfer")}</option>
+                </select>
+              </label>
+            </div>
+
             <label className="text-xs text-muted">
-              {t("upload.category")}
+              {t("upload.reliefCategory")}
               <select
-                value={draft.category}
+                value={draft.reliefCategory ?? ""}
                 onChange={(e) =>
-                  setDraft({ ...draft, category: e.target.value })
+                  setDraft({ ...draft, reliefCategory: e.target.value || null })
                 }
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
               >
-                {RELIEF_CATEGORIES.map((c) => (
+                <option value="">{t("upload.reliefNone")}</option>
+                {RELIEF_CATEGORIES.filter((c) => c.cap > 0).map((c) => (
                   <option key={c.id} value={c.id}>
                     {lang === "bm" ? c.nameBm : c.nameEn}
                   </option>
@@ -251,14 +332,83 @@ export default function UploadReceipt({
               </select>
             </label>
 
-            <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm">
-              <span className="text-muted">{t("upload.annualCap")}</span>
-              <span className="font-semibold text-accent">
-                {getReliefCategory(draft.category).cap > 0
-                  ? `RM ${getReliefCategory(draft.category).cap.toLocaleString()}`
-                  : "—"}
-              </span>
-            </div>
+            {draft.reliefCategory && (
+              <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm">
+                <span className="text-muted">{t("upload.annualCap")}</span>
+                <span className="font-semibold text-accent">
+                  RM {getReliefCategory(draft.reliefCategory).cap.toLocaleString()}
+                </span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowMore((v) => !v)}
+              className="flex items-center gap-1 text-left text-xs font-medium text-muted hover:text-foreground"
+            >
+              <span>{showMore ? "▾" : "▸"}</span>
+              {t("upload.moreDetails")}
+            </button>
+
+            {showMore && (
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface-2/50 p-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="text-xs text-muted">
+                    {t("upload.paymentMethod")}
+                    <select
+                      value={draft.paymentMethod}
+                      onChange={(e) => setDraft({ ...draft, paymentMethod: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                    >
+                      <option value="">—</option>
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {lang === "bm" ? m.nameBm : m.nameEn}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-xs text-muted">
+                    {t("upload.account")}
+                    <input
+                      value={draft.accountName}
+                      onChange={(e) => setDraft({ ...draft, accountName: e.target.value })}
+                      placeholder={t("upload.accountPlaceholder")}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                    />
+                  </label>
+                </div>
+
+                <label className="text-xs text-muted">
+                  {t("upload.tags")}
+                  <input
+                    value={draft.tags}
+                    onChange={(e) => setDraft({ ...draft, tags: e.target.value })}
+                    placeholder={t("upload.tagsPlaceholder")}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                  />
+                </label>
+
+                <label className="text-xs text-muted">
+                  {t("upload.location")}
+                  <input
+                    value={draft.location}
+                    onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                  />
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-muted">
+                  <input
+                    type="checkbox"
+                    checked={draft.isRecurring}
+                    onChange={(e) => setDraft({ ...draft, isRecurring: e.target.checked })}
+                    className="h-4 w-4 rounded border-border accent-cyan-400"
+                  />
+                  {t("upload.recurring")}
+                </label>
+              </div>
+            )}
 
             <div className="mt-2 flex gap-3">
               <button

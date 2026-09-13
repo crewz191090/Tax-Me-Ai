@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
+import { EXPENSE_CATEGORIES, getSubcategory } from "@/lib/expenseCategories";
+import { getReliefCategory } from "@/lib/reliefCategories";
 import ReceiptImageModal from "./ReceiptImageModal";
 import type { Receipt } from "@/lib/types";
+
+const TYPE_BADGE: Record<string, string> = {
+  income: "bg-emerald-400/15 text-emerald-300",
+  transfer: "bg-indigo-400/15 text-indigo-300",
+};
 
 export default function ReceiptsTable({
   receipts,
@@ -31,14 +37,17 @@ export default function ReceiptsTable({
     }
   }
 
-  async function handleCategoryChange(id: string, category: string) {
+  async function handleSubcategoryChange(id: string, subcategory: string) {
     const res = await fetch(`/api/receipts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category }),
+      body: JSON.stringify({ subcategory }),
     });
     if (!res.ok) return;
-    onChange(receipts.map((r) => (r.id === id ? { ...r, category } : r)));
+    const mainCategory = getSubcategory(subcategory)?.category.id ?? "other";
+    onChange(
+      receipts.map((r) => (r.id === id ? { ...r, subcategory, mainCategory } : r))
+    );
   }
 
   if (receipts.length === 0) {
@@ -51,119 +60,144 @@ export default function ReceiptsTable({
 
   return (
     <>
-    <div className="overflow-x-auto rounded-2xl border border-border">
-      <table className="w-full min-w-[720px] text-left text-sm">
-        <thead className="bg-surface-2 text-xs uppercase tracking-wide text-muted">
-          <tr>
-            <th className="px-4 py-3">{t("table.receipt")}</th>
-            <th className="px-4 py-3">{t("table.date")}</th>
-            <th className="px-4 py-3">{t("table.merchant")}</th>
-            <th className="px-4 py-3">{t("table.amount")}</th>
-            <th className="px-4 py-3">{t("table.category")}</th>
-            <th className="px-4 py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border bg-surface">
-          {receipts.map((r) => {
-            const category = getReliefCategory(r.category);
-            return (
-              <tr key={r.id} className="hover:bg-surface-2/60">
-                <td className="px-4 py-3">
-                  {r.imageKey ? (
-                    <button
-                      onClick={() => setViewingReceipt(r)}
-                      className="block h-10 w-10 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
-                      title={t("image.view")}
-                    >
-                      <img
-                        src={`/api/receipts/${r.id}/image`}
-                        alt={r.merchant}
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  ) : (
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-xs text-muted">
-                      —
-                    </span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-muted">{r.date}</td>
-                <td className="px-4 py-3 font-medium">
-                  <div className="flex items-center gap-2">
-                    {r.merchant}
-                    {r.isEInvoice && (
-                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
-                        e-Invoice
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="font-mono-tight whitespace-nowrap px-4 py-3">
-                  RM {r.amount.toFixed(2)}
-                </td>
-                <td className="px-4 py-3">
-                  {editingId === r.id ? (
-                    <select
-                      value={r.category}
-                      onChange={(e) => {
-                        handleCategoryChange(r.id, e.target.value);
-                        setEditingId(null);
-                      }}
-                      onBlur={() => setEditingId(null)}
-                      autoFocus
-                      className="rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs outline-none"
-                    >
-                      {RELIEF_CATEGORIES.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {lang === "bm" ? c.nameBm : c.nameEn}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <button
-                      onClick={() => setEditingId(r.id)}
-                      className={`rounded-full px-2.5 py-1 text-xs ${
-                        category.cap > 0
-                          ? "bg-accent/15 text-accent"
-                          : "bg-white/10 text-muted"
-                      }`}
-                    >
-                      {lang === "bm" ? category.nameBm : category.nameEn}
-                    </button>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-3">
-                    {r.imageKey && (
+      <div className="overflow-x-auto rounded-2xl border border-border">
+        <table className="w-full min-w-[820px] text-left text-sm">
+          <thead className="bg-surface-2 text-xs uppercase tracking-wide text-muted">
+            <tr>
+              <th className="px-4 py-3">{t("table.receipt")}</th>
+              <th className="px-4 py-3">{t("table.date")}</th>
+              <th className="px-4 py-3">{t("table.merchant")}</th>
+              <th className="px-4 py-3">{t("table.amount")}</th>
+              <th className="px-4 py-3">{t("table.category")}</th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border bg-surface">
+            {receipts.map((r) => {
+              const sub = getSubcategory(r.subcategory);
+              const relief = r.reliefCategory ? getReliefCategory(r.reliefCategory) : null;
+              return (
+                <tr key={r.id} className="hover:bg-surface-2/60">
+                  <td className="px-4 py-3">
+                    {r.imageKey ? (
                       <button
                         onClick={() => setViewingReceipt(r)}
-                        className="text-xs text-muted hover:text-accent"
+                        className="block h-10 w-10 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
+                        title={t("image.view")}
                       >
-                        {t("image.view")}
+                        <img
+                          src={`/api/receipts/${r.id}/image`}
+                          alt={r.merchant}
+                          className="h-full w-full object-cover"
+                        />
                       </button>
+                    ) : (
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-xs text-muted">
+                        —
+                      </span>
                     )}
-                    <button
-                      onClick={() => handleDelete(r.id)}
-                      disabled={pendingId === r.id}
-                      className="text-xs text-muted hover:text-red-400 disabled:opacity-50"
-                    >
-                      {pendingId === r.id ? t("table.deleting") : t("table.delete")}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-    {viewingReceipt && (
-      <ReceiptImageModal
-        receiptId={viewingReceipt.id}
-        merchant={viewingReceipt.merchant}
-        onClose={() => setViewingReceipt(null)}
-      />
-    )}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-muted">{r.date}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {r.merchant}
+                      {r.type !== "expense" && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${TYPE_BADGE[r.type]}`}
+                        >
+                          {r.type === "income" ? t("upload.typeIncome") : t("upload.typeTransfer")}
+                        </span>
+                      )}
+                      {r.isEInvoice && (
+                        <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
+                          e-Invoice
+                        </span>
+                      )}
+                      {r.isRecurring && (
+                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-muted">
+                          ↻
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="font-mono-tight whitespace-nowrap px-4 py-3">
+                    RM {r.amount.toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-1">
+                      {editingId === r.id ? (
+                        <select
+                          value={r.subcategory}
+                          onChange={(e) => {
+                            handleSubcategoryChange(r.id, e.target.value);
+                            setEditingId(null);
+                          }}
+                          onBlur={() => setEditingId(null)}
+                          autoFocus
+                          className="rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs outline-none"
+                        >
+                          {EXPENSE_CATEGORIES.map((cat) => (
+                            <optgroup
+                              key={cat.id}
+                              label={`${cat.emoji} ${lang === "bm" ? cat.nameBm : cat.nameEn}`}
+                            >
+                              {cat.subcategories.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {lang === "bm" ? s.nameBm : s.nameEn}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      ) : (
+                        <button
+                          onClick={() => setEditingId(r.id)}
+                          className="w-fit rounded-full bg-white/10 px-2.5 py-1 text-xs text-foreground/90 hover:bg-white/15"
+                        >
+                          {sub
+                            ? `${sub.category.emoji} ${lang === "bm" ? sub.subcategory.nameBm : sub.subcategory.nameEn}`
+                            : "—"}
+                        </button>
+                      )}
+                      {relief && (
+                        <span className="w-fit rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
+                          {lang === "bm" ? relief.nameBm : relief.nameEn}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      {r.imageKey && (
+                        <button
+                          onClick={() => setViewingReceipt(r)}
+                          className="text-xs text-muted hover:text-accent"
+                        >
+                          {t("image.view")}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(r.id)}
+                        disabled={pendingId === r.id}
+                        className="text-xs text-muted hover:text-red-400 disabled:opacity-50"
+                      >
+                        {pendingId === r.id ? t("table.deleting") : t("table.delete")}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {viewingReceipt && (
+        <ReceiptImageModal
+          receiptId={viewingReceipt.id}
+          merchant={viewingReceipt.merchant}
+          onClose={() => setViewingReceipt(null)}
+        />
+      )}
     </>
   );
 }

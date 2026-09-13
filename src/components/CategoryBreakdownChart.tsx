@@ -24,7 +24,7 @@ export default function CategoryBreakdownChart({
           <div key={row.categoryId}>
             <div className="mb-1 flex items-center justify-between gap-3 text-sm">
               <span className="truncate font-medium">
-                {lang === "bm" ? row.nameBm : row.nameEn}
+                {row.emoji} {lang === "bm" ? row.nameBm : row.nameEn}
               </span>
               <span className="font-mono-tight whitespace-nowrap text-muted">
                 RM {row.amount.toFixed(2)}
