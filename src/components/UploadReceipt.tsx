@@ -272,6 +272,15 @@ export default function UploadReceipt({
   const splitShare =
     splitTotal && Number(splitPeople) > 0 ? Number(splitTotal) / Number(splitPeople) : 0;
 
+  function applySplit(totalStr: string, peopleStr: string) {
+    const total = Number(totalStr);
+    const people = Number(peopleStr);
+    if (total > 0 && people > 0) {
+      const share = Math.round((total / people) * 100) / 100;
+      setDraft((prev) => (prev ? { ...prev, amount: share } : prev));
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-surface p-6">
       <input
@@ -449,7 +458,19 @@ export default function UploadReceipt({
                 />
               </label>
               <label className="text-xs text-muted">
-                {t("upload.amount")}
+                <div className="flex items-center justify-between">
+                  <span>{t("upload.amount")}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSplitEnabled((v) => !v)}
+                    title={t("upload.splitEnable")}
+                    className={`rounded-full px-1.5 py-0.5 text-xs transition-colors ${
+                      splitEnabled ? "bg-accent/20 text-accent" : "text-muted hover:text-foreground"
+                    }`}
+                  >
+                    🧮
+                  </button>
+                </div>
                 <input
                   type="number"
                   step="0.01"
@@ -462,6 +483,44 @@ export default function UploadReceipt({
                 />
               </label>
             </div>
+
+            {splitEnabled && (
+              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-surface-2/50 p-3">
+                <label className="text-xs text-muted">
+                  {t("upload.splitTotal")}
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={splitTotal}
+                    onChange={(e) => {
+                      setSplitTotal(e.target.value);
+                      applySplit(e.target.value, splitPeople);
+                    }}
+                    onFocus={(e) => e.target.select()}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                  />
+                </label>
+                <label className="text-xs text-muted">
+                  {t("upload.splitPeople")}
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={splitPeople}
+                    onChange={(e) => {
+                      setSplitPeople(e.target.value);
+                      applySplit(splitTotal, e.target.value);
+                    }}
+                    onFocus={(e) => e.target.select()}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+                  />
+                </label>
+                <div className="col-span-2 flex items-center justify-between rounded-lg bg-surface px-3 py-2 text-xs">
+                  <span className="text-muted">{t("upload.splitShare")}</span>
+                  <span className="font-semibold text-accent">RM {splitShare.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <label className="text-xs text-muted">
@@ -627,62 +686,6 @@ export default function UploadReceipt({
                     ))}
                   </select>
                 </label>
-
-                <div className="rounded-lg border border-border bg-surface p-3">
-                  <label className="flex items-center gap-2 text-xs text-muted">
-                    <input
-                      type="checkbox"
-                      checked={splitEnabled}
-                      onChange={(e) => setSplitEnabled(e.target.checked)}
-                      className="h-4 w-4 rounded border-border accent-cyan-400"
-                    />
-                    {t("upload.splitEnable")}
-                  </label>
-
-                  {splitEnabled && (
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <label className="text-xs text-muted">
-                        {t("upload.splitTotal")}
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={splitTotal}
-                          onChange={(e) => setSplitTotal(e.target.value)}
-                          onFocus={(e) => e.target.select()}
-                          className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-                        />
-                      </label>
-                      <label className="text-xs text-muted">
-                        {t("upload.splitPeople")}
-                        <input
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={splitPeople}
-                          onChange={(e) => setSplitPeople(e.target.value)}
-                          onFocus={(e) => e.target.select()}
-                          className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-                        />
-                      </label>
-
-                      <div className="col-span-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm">
-                        <span className="text-muted">{t("upload.splitShare")}</span>
-                        <span className="font-semibold text-accent">RM {splitShare.toFixed(2)}</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDraft({ ...draft, amount: Math.round(splitShare * 100) / 100 })
-                        }
-                        disabled={splitShare <= 0}
-                        className="btn-pill btn-pill-outline btn-pill-sm col-span-2"
-                      >
-                        {t("upload.splitUse")}
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
