@@ -159,9 +159,15 @@ export default function ReceiptsTable({
                             : "—"}
                         </button>
                       )}
-                      {relief && (
-                        <span className="w-fit rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
-                          {lang === "bm" ? relief.nameBm : relief.nameEn}
+                      {r.type === "expense" && (
+                        <span
+                          className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            relief ? "bg-accent/15 text-accent" : "bg-white/10 text-muted"
+                          }`}
+                        >
+                          {relief
+                            ? `✅ ${lang === "bm" ? relief.nameBm : relief.nameEn}`
+                            : `⚪ ${t("table.notDeductible")}`}
                         </span>
                       )}
                     </div>

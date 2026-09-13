@@ -314,6 +314,17 @@ export default function UploadReceipt({
               </label>
             </div>
 
+            <div
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
+                draft.reliefCategory ? "bg-accent/15 text-accent" : "bg-white/10 text-muted"
+              }`}
+            >
+              <span>{draft.reliefCategory ? "✅" : "⚪"}</span>
+              <span>
+                {draft.reliefCategory ? t("upload.deductibleYes") : t("upload.deductibleNo")}
+              </span>
+            </div>
+
             <label className="text-xs text-muted">
               {t("upload.reliefCategory")}
               <select

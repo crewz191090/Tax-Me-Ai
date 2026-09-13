@@ -106,3 +106,40 @@ export async function extractReceiptFromImage(params: {
     isEInvoice: Boolean(parsed.isEInvoice),
   };
 }
+
+export async function generateSpendingInsight(params: {
+  periodLabel: string;
+  totalSpent: number;
+  totalIncome: number;
+  breakdown: { name: string; amount: number }[];
+  lang: "en" | "bm";
+}): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not set.");
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+
+  const breakdownText = params.breakdown
+    .map((b) => `- ${b.name}: RM ${b.amount.toFixed(2)}`)
+    .join("\n");
+
+  const languageInstruction =
+    params.lang === "bm"
+      ? "Reply in conversational Malay (Bahasa Malaysia)."
+      : "Reply in English.";
+
+  const prompt = `You are a friendly personal finance assistant for a Malaysian user. Here is their spending for ${params.periodLabel}:
+
+Total spent: RM ${params.totalSpent.toFixed(2)}
+Total income: RM ${params.totalIncome.toFixed(2)}
+By category:
+${breakdownText || "(no expenses recorded)"}
+
+Write 2-3 short, specific sentences of friendly insight: point out their biggest spending category with its RM amount and rough percentage of total, note their cash flow (income vs expense, positive or negative), and give one concrete, practical tip relevant to their top category. Do not use markdown formatting, headings, or bullet points — plain conversational sentences only. ${languageInstruction}`;
+
+  const result = await model.generateContent(prompt);
+  return result.response.text().trim();
+}

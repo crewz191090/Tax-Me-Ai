@@ -8,6 +8,10 @@ import ReceiptsTable from "@/components/ReceiptsTable";
 import SummaryBar from "@/components/SummaryBar";
 import ReliefSummary from "@/components/ReliefSummary";
 import ExpensesOverview from "@/components/ExpensesOverview";
+import BudgetTracker from "@/components/BudgetTracker";
+import CashFlowSummary from "@/components/CashFlowSummary";
+import RecurringExpenses from "@/components/RecurringExpenses";
+import AiInsights from "@/components/AiInsights";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { downloadCsv } from "@/lib/exportCsv";
@@ -98,11 +102,27 @@ export default function DashboardPage() {
                 <ExpensesOverview receipts={receipts} />
               </div>
               <div className="mb-6">
+                <CashFlowSummary receipts={receipts} year={year} month={null} />
+              </div>
+              <div className="mb-6">
+                <BudgetTracker receipts={receipts} />
+              </div>
+              <div className="mb-6">
                 <ReliefSummary
                   receipts={receipts}
                   year={year}
                   onYearChange={setYear}
                 />
+              </div>
+              <div className="mb-6">
+                <AiInsights
+                  receipts={receipts}
+                  period={{ type: "year", year }}
+                  periodLabel={String(year)}
+                />
+              </div>
+              <div className="mb-6">
+                <RecurringExpenses receipts={receipts} />
               </div>
               <ReceiptsTable receipts={receipts} onChange={setReceipts} />
             </>

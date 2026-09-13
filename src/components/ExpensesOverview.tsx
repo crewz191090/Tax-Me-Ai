@@ -9,7 +9,7 @@ import {
   yearsWithReceipts,
   type Period,
 } from "@/lib/reliefCalc";
-import CategoryBreakdownChart from "./CategoryBreakdownChart";
+import CategoryPieChart from "./CategoryPieChart";
 import SpendingTrendChart from "./SpendingTrendChart";
 import type { Receipt } from "@/lib/types";
 
@@ -108,22 +108,10 @@ export default function ExpensesOverview({ receipts }: { receipts: Receipt[] }) 
 
       <div className="grid gap-8 lg:grid-cols-2">
         <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-muted">
-              {t("expenses.byCategory")}
-            </h3>
-            <div className="flex items-center gap-3 text-[11px] text-muted">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-accent" />
-                {t("expenses.legendDeductible")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-muted/50" />
-                {t("expenses.legendPersonal")}
-              </span>
-            </div>
-          </div>
-          <CategoryBreakdownChart rows={breakdown} />
+          <h3 className="mb-3 text-sm font-semibold text-muted">
+            {t("expenses.byCategory")}
+          </h3>
+          <CategoryPieChart rows={breakdown} />
         </div>
 
         <div>
