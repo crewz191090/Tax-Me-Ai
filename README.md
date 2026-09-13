@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tax Me AI
 
-## Getting Started
+Malaysian receipt & tax tracker. Snap or upload a receipt, AI extracts the
+merchant/amount/date/category, and simplified LHDN-style deductibility rules
+are applied automatically.
 
-First, run the development server:
+**Live:** https://tax-me-ai.pelaporan-manpower-fms.workers.dev
+
+## Stack
+
+- **Next.js 16** (App Router) + Tailwind CSS
+- **Google Gemini** (`gemini-3.6-flash`) for receipt vision extraction — free tier
+- **Cloudflare Workers** for hosting, via [OpenNext](https://opennext.js.org/cloudflare)
+- **Cloudflare D1** — receipt records (SQLite-compatible)
+- **Cloudflare R2** — receipt image storage
+
+## Local development
 
 ```bash
+npm install
+cp .env.local.example .env.local   # add your GEMINI_API_KEY
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Get a free Gemini key at https://aistudio.google.com/apikey.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Local D1 and R2 are emulated automatically by `next dev` via the OpenNext
+Cloudflare dev integration — no extra setup needed for `npm run dev`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For `.dev.vars` (used by `wrangler dev` / `npm run preview`), copy the same
+key:
 
-## Learn More
+```bash
+echo "GEMINI_API_KEY=your_key_here" > .dev.vars
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Database schema
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Applied via `schema.sql`. To (re)apply:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run db:migrate:local    # local D1
+npm run db:migrate:remote   # production D1
+```
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run deploy
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This builds the Next.js app with OpenNext and deploys the Worker, with
+bindings to the `tax-me-ai-db` D1 database and `tax-me-ai-receipts` R2
+bucket (configured in `wrangler.jsonc`).
+
+Set the production secret once:
+
+```bash
+npx wrangler secret put GEMINI_API_KEY
+```
+
+## Project structure
+
+- `src/app/page.tsx` — marketing landing page
+- `src/app/dashboard/page.tsx` — receipt upload + management UI
+- `src/app/api/scan` — Gemini vision extraction endpoint
+- `src/app/api/receipts` — D1-backed CRUD for receipts
+- `src/app/api/receipts/[id]/image` — serves receipt images from R2
+- `src/lib/` — D1, R2, Gemini, and deductibility-rule helpers
+
+## Disclaimer
+
+Tax Me AI is an independent tool, not affiliated with or endorsed by
+LHDN / IRBM. Deductibility results are AI-generated estimates — always
+verify with a qualified tax agent before filing.
