@@ -55,6 +55,10 @@ export const translations = {
 
     "relief.eyebrow": "Tax relief categories",
     "relief.title": "Based on LHDN's official YA{year} relief list",
+    "relief.gaugeLabel": "of total relief cap used",
+    "relief.remaining": "Remaining",
+    "relief.alertFull": "Fully claimed:",
+    "relief.alertWarning": "{pct}% used —",
     "relief.subtitle":
       "Every receipt you scan is matched to one of these categories, with its official annual cap.",
     "relief.cap": "Annual cap",
@@ -109,6 +113,8 @@ export const translations = {
     "footer.rights": "All rights reserved.",
 
     "dashboard.title": "Your receipts",
+    "dashboard.tabExpenses": "Expenses Tracker",
+    "dashboard.tabTax": "Tax Tracker",
     "dashboard.subtitle":
       "Scan, review and export — synced to your Cloudflare D1 database and R2 storage.",
     "dashboard.export": "Export CSV",
@@ -203,6 +209,9 @@ export const translations = {
     "table.deleting": "Deleting…",
     "table.editDate": "Click to edit date",
     "table.noImage": "No image or receipt",
+    "table.pageOf": "Page {page} of {total}",
+    "table.prevPage": "Previous",
+    "table.nextPage": "Next",
 
     "summary.for": "For",
     "summary.totalReceipts": "Total receipts",
@@ -306,6 +315,10 @@ export const translations = {
 
     "relief.eyebrow": "Kategori pelepasan cukai",
     "relief.title": "Berdasarkan senarai pelepasan rasmi LHDN YA{year}",
+    "relief.gaugeLabel": "daripada jumlah had pelepasan digunakan",
+    "relief.remaining": "Baki",
+    "relief.alertFull": "Telah dituntut penuh:",
+    "relief.alertWarning": "{pct}% digunakan —",
     "relief.subtitle":
       "Setiap resit yang anda imbas dipadankan dengan salah satu kategori ini, berserta had tahunan rasminya.",
     "relief.cap": "Had tahunan",
@@ -360,6 +373,8 @@ export const translations = {
     "footer.rights": "Hak cipta terpelihara.",
 
     "dashboard.title": "Resit anda",
+    "dashboard.tabExpenses": "Penjejak Perbelanjaan",
+    "dashboard.tabTax": "Penjejak Cukai",
     "dashboard.subtitle":
       "Imbas, semak dan eksport — disegerakkan ke pangkalan data D1 dan storan R2 Cloudflare anda.",
     "dashboard.export": "Eksport CSV",
@@ -454,6 +469,9 @@ export const translations = {
     "table.deleting": "Memadam…",
     "table.editDate": "Klik untuk edit tarikh",
     "table.noImage": "Tiada gambar atau resit",
+    "table.pageOf": "Halaman {page} dari {total}",
+    "table.prevPage": "Sebelum",
+    "table.nextPage": "Seterusnya",
 
     "summary.for": "Bagi",
     "summary.totalReceipts": "Jumlah resit",

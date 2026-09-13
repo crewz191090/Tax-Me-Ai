@@ -19,6 +19,37 @@ export interface ReliefSummary {
   totalClaimable: number;
 }
 
+export interface ReliefAlert {
+  categoryId: string;
+  nameEn: string;
+  nameBm: string;
+  level: "full" | "warning";
+  pct: number;
+  spent: number;
+  cap: number;
+}
+
+/**
+ * Categories that are fully claimed (spent >= cap) or close to it (>= 80%)
+ * — surfaced as in-app notifications so the user knows before they overspend
+ * into a category that no longer yields any extra tax relief.
+ */
+export function getReliefAlerts(rows: ReliefRow[]): ReliefAlert[] {
+  return rows
+    .filter((r) => r.spent > 0)
+    .map((r) => ({
+      categoryId: r.categoryId,
+      nameEn: r.nameEn,
+      nameBm: r.nameBm,
+      pct: (r.spent / r.cap) * 100,
+      spent: r.spent,
+      cap: r.cap,
+      level: (r.spent >= r.cap ? "full" : "warning") as "full" | "warning",
+    }))
+    .filter((a) => a.pct >= 80)
+    .sort((a, b) => b.pct - a.pct);
+}
+
 export function yearsWithReceipts(receipts: Receipt[]): number[] {
   const years = new Set(receipts.map((r) => Number(r.date.slice(0, 4))));
   return Array.from(years).sort((a, b) => b - a);

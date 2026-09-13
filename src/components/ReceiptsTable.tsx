@@ -13,6 +13,8 @@ const TYPE_BADGE: Record<string, string> = {
   transfer: "bg-indigo-400/15 text-indigo-300",
 };
 
+const PAGE_SIZE = 10;
+
 export default function ReceiptsTable({
   receipts,
   onChange,
@@ -25,12 +27,18 @@ export default function ReceiptsTable({
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
+  const [page, setPage] = useState(1);
 
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
   const sortedReceipts = useMemo(
     () => [...receipts].sort((a, b) => b.date.localeCompare(a.date)),
     [receipts]
   );
+
+  const totalPages = Math.max(1, Math.ceil(sortedReceipts.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const visibleReceipts = sortedReceipts.slice(pageStart, pageStart + PAGE_SIZE);
 
   async function handleDelete(id: string) {
     setPendingId(id);
@@ -92,11 +100,13 @@ export default function ReceiptsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-surface">
-            {sortedReceipts.map((r, i) => {
+            {visibleReceipts.map((r, i) => {
               const sub = getSubcategory(r.subcategory);
               const relief = r.reliefCategory ? getReliefCategory(r.reliefCategory) : null;
+              const globalIndex = pageStart + i;
               const monthKey = r.date.slice(0, 7);
-              const prevMonthKey = i > 0 ? sortedReceipts[i - 1].date.slice(0, 7) : null;
+              const prevMonthKey =
+                globalIndex > 0 ? sortedReceipts[globalIndex - 1].date.slice(0, 7) : null;
               const showDivider = monthKey !== prevMonthKey;
               const monthIndex = Number(r.date.slice(5, 7)) - 1;
               const monthLabel = `${monthNames[monthIndex] ?? ""} ${r.date.slice(0, 4)}`;
@@ -277,6 +287,30 @@ export default function ReceiptsTable({
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
+          <span>
+            {t("table.pageOf").replace("{page}", String(currentPage)).replace("{total}", String(totalPages))}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="btn-pill btn-pill-outline btn-pill-sm"
+            >
+              {t("table.prevPage")}
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="btn-pill btn-pill-outline btn-pill-sm"
+            >
+              {t("table.nextPage")}
+            </button>
+          </div>
+        </div>
+      )}
       {viewingReceipt && (
         <ReceiptImageModal
           receiptId={viewingReceipt.id}

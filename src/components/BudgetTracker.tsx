@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { INCOME_TYPES, getIncomeType } from "@/lib/incomeTypes";
+import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
+import { yearsWithReceipts } from "@/lib/reliefCalc";
 import type { IncomeEntry, Receipt } from "@/lib/types";
 
 function barGradient(pct: number) {
@@ -34,12 +36,20 @@ export default function BudgetTracker({
   const [form, setForm] = useState<EntryForm>(EMPTY_FORM);
 
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
+  const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
+
+  const availableYears = useMemo(() => {
+    const years = new Set(yearsWithReceipts(receipts));
+    for (const e of entries) years.add(e.year);
+    years.add(year);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [receipts, entries, year]);
 
   const monthEntries = useMemo(
-    () => entries.filter((e) => e.year === currentYear && e.month === currentMonth),
-    [entries, currentYear, currentMonth]
+    () => entries.filter((e) => e.year === year && e.month === month),
+    [entries, year, month]
   );
 
   const spentThisMonth = useMemo(() => {
@@ -48,11 +58,11 @@ export default function BudgetTracker({
       if (r.type !== "expense") continue;
       const y = Number(r.date.slice(0, 4));
       const m = Number(r.date.slice(5, 7));
-      if (y !== currentYear || m !== currentMonth) continue;
+      if (y !== year || m !== month) continue;
       total += r.amount;
     }
     return total;
-  }, [receipts, currentYear, currentMonth]);
+  }, [receipts, year, month]);
 
   const totalIncome = monthEntries.reduce((sum, e) => sum + e.amount, 0);
 
@@ -94,8 +104,8 @@ export default function BudgetTracker({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          year: currentYear,
-          month: currentMonth,
+          year,
+          month,
           amount,
           incomeType: form.incomeType,
           label,
@@ -105,7 +115,7 @@ export default function BudgetTracker({
       const json = (await res.json()) as { id: string };
       onEntriesChange([
         ...entries,
-        { id: json.id, year: currentYear, month: currentMonth, amount, incomeType: form.incomeType, label },
+        { id: json.id, year, month, amount, incomeType: form.incomeType, label },
       ]);
     }
 
@@ -135,7 +145,32 @@ export default function BudgetTracker({
           </button>
         )}
       </div>
-      <p className="mb-5 text-sm text-muted">{t("expenses.budgetSubtitle")}</p>
+      <p className="mb-3 text-sm text-muted">{t("expenses.budgetSubtitle")}</p>
+
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <select
+          value={month}
+          onChange={(e) => setMonth(Number(e.target.value))}
+          className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+        >
+          {monthNames.map((name, i) => (
+            <option key={name} value={i + 1}>
+              {name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+          className="rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground outline-none"
+        >
+          {availableYears.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {adding && (
         <div className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-2/50 p-3">

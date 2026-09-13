@@ -37,6 +37,7 @@ export default function DashboardPage() {
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
+  const [tab, setTab] = useState<"expenses" | "tax">("expenses");
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -211,41 +212,61 @@ export default function DashboardPage() {
 
           {loaded && (
             <>
-              <div className="mb-6">
-                <SummaryBar receipts={receipts} />
+              <div className="mb-6 flex items-center gap-1 rounded-full border border-border bg-surface-2 p-1 text-sm w-fit">
+                <button
+                  onClick={() => setTab("expenses")}
+                  className={`rounded-full px-4 py-1.5 transition-colors ${
+                    tab === "expenses" ? "bg-accent text-black" : "text-muted hover:text-foreground"
+                  }`}
+                >
+                  {t("dashboard.tabExpenses")}
+                </button>
+                <button
+                  onClick={() => setTab("tax")}
+                  className={`rounded-full px-4 py-1.5 transition-colors ${
+                    tab === "tax" ? "bg-accent text-black" : "text-muted hover:text-foreground"
+                  }`}
+                >
+                  {t("dashboard.tabTax")}
+                </button>
               </div>
-              <div className="mb-6">
-                <ExpensesOverview receipts={receipts} />
-              </div>
-              <div className="mb-6">
-                <CashFlowSummary receipts={receipts} incomeEntries={incomeEntries} />
-              </div>
-              <div className="mb-6">
-                <BudgetTracker
-                  receipts={receipts}
-                  entries={incomeEntries}
-                  onEntriesChange={setIncomeEntries}
-                />
-              </div>
-              <div className="mb-6">
-                <ReliefSummary
-                  receipts={receipts}
-                  year={year}
-                  onYearChange={setYear}
-                />
-              </div>
-              <div className="mb-6">
-                <AiInsights
-                  receipts={receipts}
-                  incomeEntries={incomeEntries}
-                  period={{ type: "year", year }}
-                  periodLabel={String(year)}
-                />
-              </div>
-              <div className="mb-6">
-                <RecurringExpenses receipts={receipts} />
-              </div>
-              <ReceiptsTable receipts={receipts} onChange={setReceipts} />
+
+              {tab === "expenses" && (
+                <>
+                  <div className="mb-6">
+                    <SummaryBar receipts={receipts} />
+                  </div>
+                  <div className="mb-6">
+                    <ExpensesOverview receipts={receipts} />
+                  </div>
+                  <div className="mb-6">
+                    <CashFlowSummary receipts={receipts} incomeEntries={incomeEntries} />
+                  </div>
+                  <div className="mb-6">
+                    <BudgetTracker
+                      receipts={receipts}
+                      entries={incomeEntries}
+                      onEntriesChange={setIncomeEntries}
+                    />
+                  </div>
+                  <div className="mb-6">
+                    <AiInsights
+                      receipts={receipts}
+                      incomeEntries={incomeEntries}
+                      period={{ type: "year", year }}
+                      periodLabel={String(year)}
+                    />
+                  </div>
+                  <div className="mb-6">
+                    <RecurringExpenses receipts={receipts} />
+                  </div>
+                  <ReceiptsTable receipts={receipts} onChange={setReceipts} />
+                </>
+              )}
+
+              {tab === "tax" && (
+                <ReliefSummary receipts={receipts} year={year} onYearChange={setYear} />
+              )}
             </>
           )}
         </div>
