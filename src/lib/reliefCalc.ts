@@ -106,7 +106,7 @@ export type Period =
   | { type: "month"; year: number; month: number } // month: 1-12
   | { type: "year"; year: number };
 
-function receiptInPeriod(receipt: Receipt, period: Period): boolean {
+export function receiptInPeriod(receipt: Receipt, period: Period): boolean {
   const receiptYear = Number(receipt.date.slice(0, 4));
   if (receiptYear !== period.year) return false;
   if (period.type === "month") {

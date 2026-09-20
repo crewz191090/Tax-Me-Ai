@@ -5,22 +5,18 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import ReceiptImageModal from "./ReceiptImageModal";
 import type { Receipt } from "@/lib/types";
 
-export default function ReliefCategoryTransactions({
-  receipts,
-  categoryId,
-  categoryNameEn,
-  categoryNameBm,
-  year,
+export default function TransactionsModal({
+  title,
+  emptyText,
+  transactions,
   onClose,
 }: {
-  receipts: Receipt[];
-  categoryId: string;
-  categoryNameEn: string;
-  categoryNameBm: string;
-  year: number;
+  title: string;
+  emptyText: string;
+  transactions: Receipt[];
   onClose: () => void;
 }) {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
 
   useEffect(() => {
@@ -31,13 +27,7 @@ export default function ReliefCategoryTransactions({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const categoryName = lang === "bm" ? categoryNameBm : categoryNameEn;
-
-  const transactions = receipts
-    .filter(
-      (r) => r.reliefCategory === categoryId && Number(r.date.slice(0, 4)) === year
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...transactions].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <>
@@ -50,9 +40,7 @@ export default function ReliefCategoryTransactions({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <span className="truncate text-sm font-semibold">
-              {t("relief.transactionsFor").replace("{category}", categoryName)}
-            </span>
+            <span className="truncate text-sm font-semibold">{title}</span>
             <button
               onClick={onClose}
               aria-label={t("image.close")}
@@ -65,13 +53,11 @@ export default function ReliefCategoryTransactions({
           </div>
 
           <div className="max-h-[70vh] overflow-y-auto p-4">
-            {transactions.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted">
-                {t("relief.noTransactions")}
-              </p>
+            {sorted.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted">{emptyText}</p>
             ) : (
               <div className="flex flex-col gap-2">
-                {transactions.map((r) => (
+                {sorted.map((r) => (
                   <div
                     key={r.id}
                     className="flex items-center gap-3 rounded-xl border border-border bg-surface-2/50 p-3"

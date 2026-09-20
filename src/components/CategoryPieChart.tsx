@@ -26,7 +26,13 @@ const RADIUS = 70;
 const STROKE = 26;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-export default function CategoryPieChart({ rows }: { rows: CategoryBreakdownRow[] }) {
+export default function CategoryPieChart({
+  rows,
+  onSelectCategory,
+}: {
+  rows: CategoryBreakdownRow[];
+  onSelectCategory?: (categoryId: string) => void;
+}) {
   const { lang, t } = useLanguage();
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -121,13 +127,16 @@ export default function CategoryPieChart({ rows }: { rows: CategoryBreakdownRow[
 
       <div className="flex w-full max-w-xs flex-col gap-2">
         {segments.map((seg) => (
-          <div
+          <button
             key={seg.row.categoryId}
+            type="button"
+            onClick={() => onSelectCategory?.(seg.row.categoryId)}
             onMouseEnter={() => setHovered(seg.row.categoryId)}
             onMouseLeave={() => setHovered(null)}
-            className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ${
+            title={t("expenses.viewTransactions")}
+            className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${
               hovered === seg.row.categoryId ? "bg-surface-2" : ""
-            }`}
+            } ${onSelectCategory ? "cursor-pointer hover:bg-surface-2" : ""}`}
           >
             <span
               className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -148,7 +157,7 @@ export default function CategoryPieChart({ rows }: { rows: CategoryBreakdownRow[
             <span className="font-mono-tight w-20 text-right font-medium">
               RM {seg.row.amount.toFixed(2)}
             </span>
-          </div>
+          </button>
         ))}
       </div>
     </div>

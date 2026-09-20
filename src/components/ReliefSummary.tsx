@@ -6,7 +6,7 @@ import { computeReliefSummary, getReliefAlerts, yearsWithReceipts } from "@/lib/
 import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
 import ReliefGauge from "./ReliefGauge";
 import ReliefCategoryDonut from "./ReliefCategoryDonut";
-import ReliefCategoryTransactions from "./ReliefCategoryTransactions";
+import TransactionsModal from "./TransactionsModal";
 import type { Receipt } from "@/lib/types";
 
 const TOTAL_RELIEF_CAP = RELIEF_CATEGORIES.filter((c) => c.cap > 0).reduce(
@@ -133,16 +133,19 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
       </div>
 
       {openCategoryId && (
-        <ReliefCategoryTransactions
-          receipts={receipts}
-          categoryId={openCategoryId}
-          categoryNameEn={
-            RELIEF_CATEGORIES.find((c) => c.id === openCategoryId)?.nameEn ?? ""
-          }
-          categoryNameBm={
-            RELIEF_CATEGORIES.find((c) => c.id === openCategoryId)?.nameBm ?? ""
-          }
-          year={year}
+        <TransactionsModal
+          title={t("relief.transactionsFor").replace(
+            "{category}",
+            lang === "bm"
+              ? RELIEF_CATEGORIES.find((c) => c.id === openCategoryId)?.nameBm ?? ""
+              : RELIEF_CATEGORIES.find((c) => c.id === openCategoryId)?.nameEn ?? ""
+          )}
+          emptyText={t("relief.noTransactions")}
+          transactions={receipts.filter(
+            (r) =>
+              r.reliefCategory === openCategoryId &&
+              Number(r.date.slice(0, 4)) === year
+          )}
           onClose={() => setOpenCategoryId(null)}
         />
       )}

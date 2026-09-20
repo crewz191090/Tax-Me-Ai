@@ -6,11 +6,14 @@ import {
   computeCategoryBreakdown,
   computeMonthlyTrend,
   computeYearlyTrend,
+  receiptInPeriod,
   type Period,
 } from "@/lib/reliefCalc";
+import { getExpenseCategory } from "@/lib/expenseCategories";
 import CategoryPieChart from "./CategoryPieChart";
 import SpendingTrendChart from "./SpendingTrendChart";
 import GlassSegmentedControl from "./GlassSegmentedControl";
+import TransactionsModal from "./TransactionsModal";
 import type { Receipt } from "@/lib/types";
 
 export default function ExpensesOverview({
@@ -25,12 +28,16 @@ export default function ExpensesOverview({
   const { lang, t } = useLanguage();
 
   const [view, setView] = useState<"month" | "year">("month");
+  const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
 
-  const breakdown = useMemo(() => {
-    const period: Period =
-      view === "month" ? { type: "month", year, month } : { type: "year", year };
-    return computeCategoryBreakdown(receipts, period);
-  }, [receipts, view, year, month]);
+  const period: Period =
+    view === "month" ? { type: "month", year, month } : { type: "year", year };
+
+  const breakdown = useMemo(
+    () => computeCategoryBreakdown(receipts, period),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [receipts, view, year, month]
+  );
 
   const trend = useMemo(
     () =>
@@ -62,7 +69,7 @@ export default function ExpensesOverview({
           <h3 className="mb-3 text-sm font-semibold text-muted">
             {t("expenses.byCategory")}
           </h3>
-          <CategoryPieChart rows={breakdown} />
+          <CategoryPieChart rows={breakdown} onSelectCategory={setOpenCategoryId} />
         </div>
 
         <div>
@@ -72,6 +79,25 @@ export default function ExpensesOverview({
           <SpendingTrendChart points={trend} />
         </div>
       </div>
+
+      {openCategoryId && (
+        <TransactionsModal
+          title={t("expenses.transactionsFor").replace(
+            "{category}",
+            lang === "bm"
+              ? getExpenseCategory(openCategoryId).nameBm
+              : getExpenseCategory(openCategoryId).nameEn
+          )}
+          emptyText={t("expenses.noTransactions")}
+          transactions={receipts.filter(
+            (r) =>
+              r.type === "expense" &&
+              r.mainCategory === openCategoryId &&
+              receiptInPeriod(r, period)
+          )}
+          onClose={() => setOpenCategoryId(null)}
+        />
+      )}
     </div>
   );
 }
