@@ -34,4 +34,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Needed to save exported PDF/CSV files to the public Documents
+         folder on pre-scoped-storage devices (Android 9 and below);
+         ignored by the OS on Android 10+, where creating the app's own
+         files there needs no permission. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 </manifest>

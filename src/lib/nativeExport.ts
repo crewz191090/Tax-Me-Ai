@@ -21,23 +21,35 @@ function blobToBase64(blob: Blob): Promise<string> {
 /**
  * The classic <a download> + blob URL trick has no download manager to
  * hand off to inside Capacitor's Android WebView, so it silently does
- * nothing there. Native builds instead write the file to the app's cache
- * and open the system share sheet, from which the user can save it to
- * Downloads, Drive, or send it anywhere else. Regular web browsers keep
- * using the normal download link.
+ * nothing there. Native builds instead write the file to the device's
+ * public Documents folder (so it's actually saved and visible in a file
+ * manager, not just sitting in the app's private cache) and then also
+ * open the system share sheet so the user can immediately send it
+ * elsewhere (Drive, WhatsApp, etc.) if they want — cancelling the share
+ * sheet is not an error, since the file is already saved either way.
+ * Regular web browsers keep using the normal download link.
  */
 export async function saveOrShareFile(blob: Blob, filename: string): Promise<void> {
   if (Capacitor.isNativePlatform()) {
+    const permission = await Filesystem.checkPermissions();
+    if (permission.publicStorage !== "granted") {
+      await Filesystem.requestPermissions();
+    }
+
     const base64 = await blobToBase64(blob);
     const written = await Filesystem.writeFile({
       path: filename,
       data: base64,
-      directory: Directory.Cache,
+      directory: Directory.Documents,
+      recursive: true,
     });
-    await Share.share({
-      title: filename,
-      url: written.uri,
-    });
+
+    try {
+      await Share.share({ title: filename, url: written.uri });
+    } catch {
+      // User dismissed the share sheet, or no share target is available —
+      // not a failure, the file is already saved to the Documents folder.
+    }
     return;
   }
 
