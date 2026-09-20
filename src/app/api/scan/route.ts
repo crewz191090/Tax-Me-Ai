@@ -1,7 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractReceiptFromImage } from "@/lib/deepseek";
+import { extractReceiptFromImage as extractWithDeepSeek } from "@/lib/deepseek";
+import { extractReceiptFromImage as extractWithGemini } from "@/lib/gemini";
 import { getSessionUser } from "@/lib/auth/session";
 import { checkRateLimit, getClientIp } from "@/lib/auth/rateLimit";
+import type { ExtractedReceipt } from "@/lib/types";
+
+function isUnrelatedImageError(err: unknown): boolean {
+  return err instanceof Error && (err as Error & { code?: string }).code === "UNRELATED_IMAGE";
+}
+
+/**
+ * Three-tier OCR fallback: DeepSeek first (primary, paid, no quota worries),
+ * then Gemini (backup provider if DeepSeek's API has an outage or errors),
+ * then — if both AI providers fail — the caller (UploadReceipt.tsx) falls
+ * back to fully local, in-browser Tesseract OCR. An "unrelated image"
+ * verdict is a genuine rejection, not a provider failure, so it's never
+ * retried against the next tier — that would just waste a call.
+ */
+async function extractReceiptWithFallback(params: {
+  base64Data: string;
+  mimeType: string;
+}): Promise<ExtractedReceipt> {
+  try {
+    return await extractWithDeepSeek(params);
+  } catch (deepseekErr) {
+    if (isUnrelatedImageError(deepseekErr)) throw deepseekErr;
+    console.error("DeepSeek scan failed, falling back to Gemini:", deepseekErr);
+
+    try {
+      return await extractWithGemini(params);
+    } catch (geminiErr) {
+      if (isUnrelatedImageError(geminiErr)) throw geminiErr;
+      console.error("Gemini scan also failed, falling back to local OCR:", geminiErr);
+      throw geminiErr;
+    }
+  }
+}
 
 export const runtime = "nodejs";
 
@@ -54,7 +88,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64Data = buffer.toString("base64");
 
-    const extracted = await extractReceiptFromImage({
+    const extracted = await extractReceiptWithFallback({
       base64Data,
       mimeType: file.type,
     });
