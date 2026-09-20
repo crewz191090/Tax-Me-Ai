@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
-import { generateSpendingInsight } from "@/lib/gemini";
+import { generateSpendingInsight } from "@/lib/deepseek";
 
 export const runtime = "nodejs";
 

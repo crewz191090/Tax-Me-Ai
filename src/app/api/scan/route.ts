@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractReceiptFromImage } from "@/lib/gemini";
+import { extractReceiptFromImage } from "@/lib/deepseek";
 import { getSessionUser } from "@/lib/auth/session";
 import { checkRateLimit, getClientIp } from "@/lib/auth/rateLimit";
 
