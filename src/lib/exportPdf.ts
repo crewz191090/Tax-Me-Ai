@@ -1,4 +1,5 @@
 import { getExpenseCategory } from "./expenseCategories";
+import { saveOrShareFile } from "./nativeExport";
 import type { Receipt } from "./types";
 
 export async function downloadMonthlyExpensePdf(
@@ -57,5 +58,6 @@ export async function downloadMonthlyExpensePdf(
   });
 
   const monthStr = String(month).padStart(2, "0");
-  doc.save(`tax-me-ai-expenses-${year}-${monthStr}.pdf`);
+  const blob = doc.output("blob");
+  await saveOrShareFile(blob, `tax-me-ai-expenses-${year}-${monthStr}.pdf`);
 }
