@@ -371,8 +371,8 @@ body {
   z-index: 1;
   min-width: 0;
   border-radius: 9999px;
-  padding: 0.45rem 1.1rem;
-  font-size: 0.8125rem;
+  padding: 0.32rem 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
@@ -395,8 +395,8 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  padding: 0.45rem 1.1rem;
-  font-size: 0.8125rem;
+  padding: 0.32rem 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--foreground);
   white-space: nowrap;

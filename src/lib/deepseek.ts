@@ -73,6 +73,7 @@ export async function extractReceiptFromImage(params: {
 
 {
   "merchant": string,
+  "location": string,
   "date": string,
   "amount": number,
   "mainCategory": string,
@@ -84,7 +85,7 @@ export async function extractReceiptFromImage(params: {
 
 First, determine what kind of document this actually is (documentType): a purchase "receipt"/invoice, a "bank_transaction" screenshot (bank transfer, e-wallet payment, ATM slip), or "unrelated" if it is not a receipt or bank transaction at all — in that case still fill the other fields with your best guess, but documentType is what matters.
 
-If it is a receipt or bank transaction, extract the merchant name (or bank/payee name for a bank transaction) into "merchant", the transaction date into "date" (yyyy-mm-dd format, from what is printed on the image itself — if no date is legible, use an empty string rather than guessing a year), and the total amount paid as a plain number (no currency symbol) into "amount". If it's a bank_transaction, also put the transaction/reference number shown into "transactionNumber" (empty string if not applicable).
+If it is a receipt or bank transaction, extract the merchant/store name (or bank/payee name for a bank transaction) into "merchant" — the business or brand name only, not its address. If it's a "receipt", also extract the store's branch location (e.g. the mall, city, or area printed near the merchant name/address, such as "Mid Valley" or "Petaling Jaya") into "location" — empty string if this is a bank_transaction or no location is legible. Extract the transaction date into "date" (yyyy-mm-dd format, from what is printed on the image itself — if no date is legible, use an empty string rather than guessing a year), and the total amount paid as a plain number (no currency symbol) into "amount". If it's a bank_transaction, also put the transaction/reference number shown into "transactionNumber" (empty string if not applicable).
 
 Set "mainCategory" to the single best-matching id from this list (respond with the id exactly as written, in quotes):
 ${MAIN_CATEGORY_GUIDE}
@@ -107,6 +108,7 @@ Set "isEInvoice" to true only if this looks like an official LHDN MyInvois e-inv
 
   const step1 = JSON.parse(content) as {
     merchant: string;
+    location?: string;
     date: string;
     amount: number;
     mainCategory: string;
@@ -149,11 +151,15 @@ Set "isEInvoice" to true only if this looks like an official LHDN MyInvois e-inv
     }
   }
 
+  // "Store Name (Location)" for receipts, "Payee Name (Transaction No.)"
+  // for bank transfers/e-wallet screenshots.
   const baseName = step1.merchant || "Unknown merchant";
-  const merchant =
-    step1.documentType === "bank_transaction" && step1.transactionNumber
-      ? `${baseName} (${step1.transactionNumber})`
-      : baseName;
+  let merchant = baseName;
+  if (step1.documentType === "bank_transaction" && step1.transactionNumber) {
+    merchant = `${baseName} (${step1.transactionNumber})`;
+  } else if (step1.location) {
+    merchant = `${baseName} (${step1.location})`;
+  }
 
   return {
     merchant,
