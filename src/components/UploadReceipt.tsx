@@ -450,11 +450,11 @@ export default function UploadReceipt({
       {status === "scanning" && (
         <div className="flex flex-col items-center gap-4 py-10 text-center">
           {preview && (
-            <div className="scan-frame relative max-h-40 w-fit overflow-hidden rounded-lg border border-accent/40">
+            <div className="scan-frame relative max-h-[28rem] w-full overflow-hidden rounded-lg border border-accent/40">
               <img
                 src={preview}
                 alt="Receipt preview"
-                className="max-h-40 object-contain"
+                className="max-h-[28rem] w-full object-contain"
               />
               <div className="scan-line" />
               <span className="scan-corner scan-corner-tl" />
