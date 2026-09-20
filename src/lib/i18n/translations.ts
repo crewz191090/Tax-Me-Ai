@@ -67,6 +67,9 @@ export const translations = {
     "relief.cap": "Annual cap",
     "relief.disclaimer":
       "Simplified summary for planning purposes only, based on LHDN's published individual relief brochure. Always confirm with LHDN or a licensed tax agent before filing.",
+    "relief.viewTransactions": "View transactions",
+    "relief.transactionsFor": "Transactions — {category}",
+    "relief.noTransactions": "No transactions in this category yet.",
 
     "privacy.eyebrow": "Privacy & trust",
     "privacy.title": "Your receipts are yours. Full stop.",
@@ -328,6 +331,9 @@ export const translations = {
     "relief.cap": "Had tahunan",
     "relief.disclaimer":
       "Ringkasan mudah untuk tujuan perancangan sahaja, berdasarkan risalah pelepasan individu rasmi LHDN. Sila sahkan dengan LHDN atau ejen cukai bertauliah sebelum memfailkan.",
+    "relief.viewTransactions": "Lihat transaksi",
+    "relief.transactionsFor": "Transaksi — {category}",
+    "relief.noTransactions": "Belum ada transaksi dalam kategori ini.",
 
     "privacy.eyebrow": "Privasi & kepercayaan",
     "privacy.title": "Resit anda milik anda. Titik.",

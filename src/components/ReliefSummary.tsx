@@ -6,6 +6,7 @@ import { computeReliefSummary, getReliefAlerts, yearsWithReceipts } from "@/lib/
 import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
 import ReliefGauge from "./ReliefGauge";
 import ReliefCategoryDonut from "./ReliefCategoryDonut";
+import ReliefCategoryTransactions from "./ReliefCategoryTransactions";
 import type { Receipt } from "@/lib/types";
 
 const TOTAL_RELIEF_CAP = RELIEF_CATEGORIES.filter((c) => c.cap > 0).reduce(
@@ -16,6 +17,7 @@ const TOTAL_RELIEF_CAP = RELIEF_CATEGORIES.filter((c) => c.cap > 0).reduce(
 export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
   const { lang, t } = useLanguage();
   const [year, setYear] = useState(new Date().getFullYear());
+  const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
 
   const availableYears = (() => {
     const years = new Set(yearsWithReceipts(receipts));
@@ -86,9 +88,12 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
             const pct = Math.min(100, (row.spent / row.cap) * 100);
             const over = row.spent >= row.cap;
             return (
-              <div
+              <button
                 key={row.categoryId}
-                className="flex gap-3 rounded-xl border border-border bg-surface-2/50 p-4"
+                type="button"
+                onClick={() => setOpenCategoryId(row.categoryId)}
+                title={t("relief.viewTransactions")}
+                className="flex gap-3 rounded-xl border border-border bg-surface-2/50 p-4 text-left transition-colors hover:border-accent/50 hover:bg-surface-2"
               >
                 <ReliefCategoryDonut pct={pct} over={over} />
                 <div className="min-w-0 flex-1">
@@ -114,7 +119,7 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
                     </span>
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -126,6 +131,21 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
           RM {summary.totalClaimable.toFixed(2)}
         </span>
       </div>
+
+      {openCategoryId && (
+        <ReliefCategoryTransactions
+          receipts={receipts}
+          categoryId={openCategoryId}
+          categoryNameEn={
+            RELIEF_CATEGORIES.find((c) => c.id === openCategoryId)?.nameEn ?? ""
+          }
+          categoryNameBm={
+            RELIEF_CATEGORIES.find((c) => c.id === openCategoryId)?.nameBm ?? ""
+          }
+          year={year}
+          onClose={() => setOpenCategoryId(null)}
+        />
+      )}
     </div>
   );
 }
