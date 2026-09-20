@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -55,30 +55,7 @@ jobs:
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Sync Capacitor native project
-        id: cap_sync
-        continue-on-error: true
-        run: npx cap sync android > cap-sync.log 2>&1
-
-      - name: Show cap sync log
-        run: cat cap-sync.log
-
-      - name: Upload cap sync log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cap-sync-log
-          path: cap-sync.log
-
-      - name: Fail if cap sync failed
-        if: steps.cap_sync.outcome == 'failure'
-        run: |
-          {
-            echo "::error::cap sync failed. Log:"
-            while IFS= read -r line; do
-              echo "::error::$line"
-            done < cap-sync.log
-          }
-          exit 1
+        run: npx cap sync android
 
       - name: Cache Gradle
         uses: actions/cache@v4
