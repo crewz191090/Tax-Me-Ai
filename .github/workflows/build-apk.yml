@@ -35,8 +35,16 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # ubuntu-latest runners already ship a full Android SDK at
+      # $ANDROID_SDK_ROOT/$ANDROID_HOME — no separate setup action needed
+      # (and android-actions/setup-android@v3 currently hard-fails: it
+      # requests the legacy "tools" package, which Google has removed).
+      # Just make sure the exact platform/build-tools this project compiles
+      # against are installed, in case the runner image hasn't caught up yet.
+      - name: Install required Android SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Sync Capacitor native project
         run: npx cap sync android
