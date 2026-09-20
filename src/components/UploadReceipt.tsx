@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import {
   EXPENSE_CATEGORIES,
@@ -33,6 +35,28 @@ interface Draft {
   isRecurring: boolean;
   location: string;
   loanTenureMonths: number | null;
+}
+
+// Android's WebView file chooser (used by a plain <input capture>) silently
+// drops the camera option and falls back to the gallery unless the app has
+// been granted the CAMERA permission at runtime — the manifest permission
+// alone isn't enough. The native Camera plugin requests that permission
+// properly and opens the camera directly, so we use it whenever running
+// inside the Capacitor app; the web build keeps the plain file input.
+async function takePhotoNative(): Promise<File | null> {
+  const photo = await Camera.getPhoto({
+    resultType: CameraResultType.Base64,
+    source: CameraSource.Camera,
+    quality: 85,
+  });
+  if (!photo.base64String) return null;
+
+  const format = photo.format || "jpeg";
+  const binary = atob(photo.base64String);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+  return new File([bytes], `receipt-${Date.now()}.${format}`, { type: `image/${format}` });
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -180,6 +204,22 @@ export default function UploadReceipt({
   function onManualInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
     if (selected) startManualEntry(selected);
+  }
+
+  async function handleTakePhoto(forManual: boolean) {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const photo = await takePhotoNative();
+        if (photo) {
+          if (forManual) startManualEntry(photo);
+          else handleFile(photo);
+        }
+      } catch {
+        // User cancelled the camera or denied permission — nothing to do.
+      }
+      return;
+    }
+    (forManual ? manualCameraInputRef : cameraInputRef).current?.click();
   }
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -365,7 +405,7 @@ export default function UploadReceipt({
               </button>
               <button
                 type="button"
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={() => handleTakePhoto(false)}
                 className="btn-pill btn-pill-outline btn-pill-sm"
               >
                 📷 {t("upload.takePhoto")}
@@ -389,7 +429,7 @@ export default function UploadReceipt({
               </button>
               <button
                 type="button"
-                onClick={() => manualCameraInputRef.current?.click()}
+                onClick={() => handleTakePhoto(true)}
                 className="btn-pill btn-pill-outline btn-pill-sm"
               >
                 📷 {t("upload.takePhoto")}
