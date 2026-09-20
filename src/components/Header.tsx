@@ -12,7 +12,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-3 z-50 px-3 sm:px-6">
-      <div className="glass-nav mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 rounded-3xl px-4 py-3 sm:px-6 sm:py-4">
+      <div className="glass-nav mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 rounded-3xl px-4 py-2 sm:px-6 sm:py-2.5">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/logo.png"
@@ -28,7 +28,11 @@ export default function Header() {
 
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
           {!loading && user && (
-            <Link href="/dashboard" className="glass-pill-btn">
+            <Link
+              href="/dashboard"
+              className="glass-pill-btn w-32"
+              style={{ paddingTop: "0.7rem", paddingBottom: "0.7rem" }}
+            >
               {t("nav.dashboard")}
             </Link>
           )}
@@ -36,6 +40,7 @@ export default function Header() {
           <GlassSegmentedControl
             value={lang}
             onChange={setLang}
+            className="w-32"
             options={[
               { value: "en", label: "EN" },
               { value: "bm", label: "BM" },
