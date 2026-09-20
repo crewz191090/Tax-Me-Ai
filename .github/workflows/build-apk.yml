@@ -20,6 +20,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # gradlew's executable bit can get lost when committed from Windows;
+      # git now tracks it correctly, but set it defensively before anything
+      # (npx cap sync included) might need to run it.
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+        working-directory: android
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -59,10 +66,6 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-        working-directory: android
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
