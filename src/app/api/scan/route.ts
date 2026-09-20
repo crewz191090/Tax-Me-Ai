@@ -1,11 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractReceiptFromImage } from "@/lib/gemini";
+import { getSessionUser } from "@/lib/auth/session";
+import { checkRateLimit, getClientIp } from "@/lib/auth/rateLimit";
 
 export const runtime = "nodejs";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
 
 export async function POST(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
+  const allowed = await checkRateLimit({
+    key: `scan:${user.id}:${getClientIp(req)}`,
+    limit: 60,
+    windowSeconds: 60 * 60,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many scan requests. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file");

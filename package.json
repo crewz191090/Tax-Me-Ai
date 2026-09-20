@@ -11,10 +11,14 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:migrate:local": "wrangler d1 execute tax-me-ai-db --local --file=./schema.sql",
-    "db:migrate:remote": "wrangler d1 execute tax-me-ai-db --remote --file=./schema.sql"
+    "db:migrate:remote": "wrangler d1 execute tax-me-ai-db --remote --file=./schema.sql",
+    "cap:sync": "cap sync",
+    "cap:android": "cap open android",
+    "cap:ios": "cap open ios"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@capacitor/core": "^8.5.2",
+    "@google/genai": "^2.23.0",
     "idb-keyval": "^6.3.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
@@ -24,6 +28,9 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@opennextjs/cloudflare": "^1.20.6",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

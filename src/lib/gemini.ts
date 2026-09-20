@@ -1,7 +1,9 @@
-import { GoogleGenerativeAI, SchemaType, type ObjectSchema } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { EXPENSE_CATEGORIES, getExpenseCategory } from "./expenseCategories";
 import { RELIEF_CATEGORIES } from "./reliefCategories";
 import type { ExtractedReceipt } from "./types";
+
+const MODEL = "gemini-3.5-flash-lite";
 
 const RELIEF_CATEGORY_IDS = RELIEF_CATEGORIES.map((c) => c.id);
 const MAIN_CATEGORY_IDS = EXPENSE_CATEGORIES.map((c) => c.id);
@@ -23,47 +25,44 @@ const RELIEF_GUIDE = RELIEF_CATEGORIES.filter((c) => c.cap > 0)
  * giant one: main category first (16 options), then subcategory scoped to
  * that category (at most ~11 options) as a second, cheap text-only call.
  */
-const STEP1_SCHEMA: ObjectSchema = {
-  type: SchemaType.OBJECT,
+const STEP1_SCHEMA = {
+  type: "object",
   properties: {
     merchant: {
-      type: SchemaType.STRING,
+      type: "string",
       description: "The name of the merchant or business on the receipt.",
     },
     date: {
-      type: SchemaType.STRING,
+      type: "string",
       description: "The transaction date in yyyy-mm-dd format.",
     },
     amount: {
-      type: SchemaType.NUMBER,
+      type: "number",
       description: "The total amount paid, as a plain number (no currency symbol).",
     },
     mainCategory: {
-      type: SchemaType.STRING,
-      format: "enum",
+      type: "string",
       description: `Best matching general expense category id:\n${MAIN_CATEGORY_GUIDE}`,
       enum: MAIN_CATEGORY_IDS,
     },
     reliefCategoryOrNone: {
-      type: SchemaType.STRING,
-      format: "enum",
+      type: "string",
       description: `Malaysian LHDN individual tax relief category id if this expense qualifies for a specific relief, otherwise "none":\n${RELIEF_GUIDE}`,
       enum: [...RELIEF_CATEGORY_IDS, "none"],
     },
     isEInvoice: {
-      type: SchemaType.BOOLEAN,
+      type: "boolean",
       description:
         "True only if this looks like a Malaysian LHDN MyInvois e-invoice (has a validation/QR reference or explicit e-invoice marking).",
     },
     documentType: {
-      type: SchemaType.STRING,
-      format: "enum",
+      type: "string",
       enum: ["receipt", "bank_transaction", "unrelated"],
       description:
         'Classify the image itself: "receipt" for a purchase receipt/invoice, "bank_transaction" for a bank transfer/payment confirmation screenshot (online banking, e-wallet, ATM slip), or "unrelated" if the image is not a receipt or bank transaction at all (e.g. a random photo, selfie, document unrelated to a transaction, blank/unreadable image).',
     },
     transactionNumber: {
-      type: SchemaType.STRING,
+      type: "string",
       description:
         'Only when documentType is "bank_transaction": the transaction/reference number shown on the screenshot (e.g. "TXN123456789", reference no., or transfer ID). Empty string if not applicable or not visible.',
     },
@@ -71,13 +70,12 @@ const STEP1_SCHEMA: ObjectSchema = {
   required: ["merchant", "date", "amount", "mainCategory", "reliefCategoryOrNone", "documentType"],
 };
 
-function subcategorySchema(subcategoryIds: string[]): ObjectSchema {
+function subcategorySchema(subcategoryIds: string[]) {
   return {
-    type: SchemaType.OBJECT,
+    type: "object",
     properties: {
       subcategory: {
-        type: SchemaType.STRING,
-        format: "enum",
+        type: "string",
         enum: subcategoryIds,
       },
     },
@@ -85,15 +83,8 @@ function subcategorySchema(subcategoryIds: string[]): ObjectSchema {
   };
 }
 
-function getModel(apiKey: string, schema: ObjectSchema) {
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({
-    model: "gemini-3.5-flash-lite",
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-    },
-  });
+function getClient(apiKey: string) {
+  return new GoogleGenAI({ apiKey });
 }
 
 export async function extractReceiptFromImage(params: {
@@ -107,20 +98,33 @@ export async function extractReceiptFromImage(params: {
     );
   }
 
-  const step1Model = getModel(apiKey, STEP1_SCHEMA);
-  const step1Result = await step1Model.generateContent([
-    {
-      inlineData: {
-        data: params.base64Data,
-        mimeType: params.mimeType,
-      },
-    },
-    {
-      text: `You are reading an image uploaded to a personal expense tracker. First, determine what kind of document this actually is (documentType): a purchase "receipt"/invoice, a "bank_transaction" screenshot (bank transfer, e-wallet payment, ATM slip), or "unrelated" if it is not a receipt or bank transaction at all — in that case still fill the other fields with your best guess, but documentType is what matters.\n\nIf it is a receipt or bank transaction, extract the merchant name (or bank/payee name for a bank transaction), transaction date, and total amount. The date must come only from what is printed on the image itself (e.g. a date/time line, transaction timestamp, or invoice date) — if no date is legible, return an empty string for date rather than guessing a year. If it's a bank_transaction, also extract the transaction/reference number shown, if any.\n\nClassify the expense into the single best-matching general category id from this list:\n\n${MAIN_CATEGORY_GUIDE}\n\nSeparately, check whether this expense also qualifies for a specific LHDN individual income tax relief category. If it clearly matches one of these, return its id; otherwise return "none":\n\n${RELIEF_GUIDE}\n\nIf it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
-    },
-  ]);
+  const ai = getClient(apiKey);
 
-  const step1Text = step1Result.response.text();
+  const step1Result = await ai.models.generateContent({
+    model: MODEL,
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              data: params.base64Data,
+              mimeType: params.mimeType,
+            },
+          },
+          {
+            text: `You are reading an image uploaded to a personal expense tracker. First, determine what kind of document this actually is (documentType): a purchase "receipt"/invoice, a "bank_transaction" screenshot (bank transfer, e-wallet payment, ATM slip), or "unrelated" if it is not a receipt or bank transaction at all — in that case still fill the other fields with your best guess, but documentType is what matters.\n\nIf it is a receipt or bank transaction, extract the merchant name (or bank/payee name for a bank transaction), transaction date, and total amount. The date must come only from what is printed on the image itself (e.g. a date/time line, transaction timestamp, or invoice date) — if no date is legible, return an empty string for date rather than guessing a year. If it's a bank_transaction, also extract the transaction/reference number shown, if any.\n\nClassify the expense into the single best-matching general category id from this list:\n\n${MAIN_CATEGORY_GUIDE}\n\nSeparately, check whether this expense also qualifies for a specific LHDN individual income tax relief category. If it clearly matches one of these, return its id; otherwise return "none":\n\n${RELIEF_GUIDE}\n\nIf it looks like an official LHDN MyInvois e-invoice (has a validation link, QR code, or unique identifier number), set isEInvoice to true.`,
+          },
+        ],
+      },
+    ],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: STEP1_SCHEMA,
+    },
+  });
+
+  const step1Text = step1Result.text ?? "";
   const step1 = JSON.parse(step1Text) as {
     merchant: string;
     date: string;
@@ -149,13 +153,17 @@ export async function extractReceiptFromImage(params: {
   let subcategory = subcategoryIds[0] ?? "uncategorized";
   if (subcategoryIds.length > 1) {
     try {
-      const step2Model = getModel(apiKey, subcategorySchema(subcategoryIds));
-      const step2Result = await step2Model.generateContent(
-        `Merchant: "${step1.merchant}". Category: ${category.nameEn}. Pick the single best-matching subcategory id for this expense from: ${category.subcategories
+      const step2Result = await ai.models.generateContent({
+        model: MODEL,
+        contents: `Merchant: "${step1.merchant}". Category: ${category.nameEn}. Pick the single best-matching subcategory id for this expense from: ${category.subcategories
           .map((s) => `"${s.id}" (${s.nameEn})`)
-          .join(", ")}.`
-      );
-      const step2 = JSON.parse(step2Result.response.text()) as { subcategory: string };
+          .join(", ")}.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: subcategorySchema(subcategoryIds),
+        },
+      });
+      const step2 = JSON.parse(step2Result.text ?? "") as { subcategory: string };
       if (subcategoryIds.includes(step2.subcategory)) {
         subcategory = step2.subcategory;
       }
@@ -196,8 +204,7 @@ export async function generateSpendingInsight(params: {
     throw new Error("GEMINI_API_KEY is not set.");
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
+  const ai = getClient(apiKey);
 
   const breakdownText = params.breakdown
     .map((b) => `- ${b.name}: RM ${b.amount.toFixed(2)}`)
@@ -217,6 +224,9 @@ ${breakdownText || "(no expenses recorded)"}
 
 Write 2-4 short, specific sentences of friendly insight: mention the total spent, name their biggest spending category with its RM amount and rough percentage of total, and if there is a second category also mention it briefly by name and amount so the total is clearly accounted for (skip this if there's only one category). Note their cash flow (income vs expense, positive or negative), and give one concrete, practical tip relevant to their top category. Do not use markdown formatting, headings, or bullet points — plain conversational sentences only. ${languageInstruction}`;
 
-  const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+  const result = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+  });
+  return (result.text ?? "").trim();
 }

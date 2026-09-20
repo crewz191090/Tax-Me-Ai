@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { findUserByEmail } from "@/lib/auth/users";
+import { checkRateLimit, getClientIp } from "@/lib/auth/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,19 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as { email?: string; password?: string };
     const email = (body.email ?? "").trim();
     const password = body.password ?? "";
+
+    const ip = getClientIp(req);
+    const allowed = await checkRateLimit({
+      key: `login:${ip}:${email.toLowerCase()}`,
+      limit: 10,
+      windowSeconds: 15 * 60,
+    });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
 
     const user = await findUserByEmail(email);
     if (!user) {

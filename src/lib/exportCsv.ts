@@ -3,8 +3,19 @@ import { getReliefCategory } from "./reliefCategories";
 import { getSubcategory } from "./expenseCategories";
 import type { Receipt } from "./types";
 
+const FORMULA_LEADING_CHARS = ["=", "+", "-", "@", "\t", "\r"];
+
 function escapeCsvField(value: string | number): string {
-  const str = String(value);
+  let str = String(value);
+
+  // Neutralize CSV/formula injection: spreadsheet apps (Excel, Google
+  // Sheets) treat a leading =, +, -, or @ as the start of a formula, which
+  // can execute code or exfiltrate data when the exported file is opened.
+  // Prefixing with a single quote forces those apps to treat it as text.
+  if (FORMULA_LEADING_CHARS.some((c) => str.startsWith(c))) {
+    str = `'${str}`;
+  }
+
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
