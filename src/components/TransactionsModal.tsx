@@ -60,37 +60,43 @@ export default function TransactionsModal({
                 {sorted.map((r) => (
                   <div
                     key={r.id}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-surface-2/50 p-3"
+                    className="flex flex-col gap-3 rounded-xl border border-border bg-surface-2/50 p-3 sm:flex-row sm:items-center"
                   >
-                    {r.imageKey ? (
-                      <button
-                        onClick={() => setViewingReceipt(r)}
-                        className="block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
-                        title={t("image.view")}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`/api/receipts/${r.id}/image`}
-                          alt={r.merchant}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    ) : (
-                      <span
-                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed border-border bg-surface-2 text-muted"
-                        title={t("table.noImage")}
-                      >
-                        🖼️
-                      </span>
-                    )}
+                    <div className="flex min-w-0 items-center gap-3">
+                      {r.imageKey ? (
+                        <button
+                          onClick={() => setViewingReceipt(r)}
+                          className="block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
+                          title={t("image.view")}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`/api/receipts/${r.id}/image`}
+                            alt={r.merchant}
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                      ) : (
+                        <span
+                          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed border-border bg-surface-2 text-muted"
+                          title={t("table.noImage")}
+                        >
+                          🖼️
+                        </span>
+                      )}
 
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{r.merchant}</div>
-                      <div className="text-xs text-muted">{r.date}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{r.merchant}</div>
+                        <div className="text-xs text-muted">{r.date}</div>
+                      </div>
+
+                      <span className="font-mono-tight shrink-0 text-sm font-semibold text-accent sm:hidden">
+                        RM {r.amount.toFixed(2)}
+                      </span>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="font-mono-tight text-sm font-semibold text-accent">
+                    <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
+                      <span className="font-mono-tight hidden text-sm font-semibold text-accent sm:inline">
                         RM {r.amount.toFixed(2)}
                       </span>
                       {r.imageKey && (
