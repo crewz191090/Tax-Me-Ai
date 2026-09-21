@@ -117,6 +117,53 @@ export function yearlyDeductibleReceipts(receipts: Receipt[], year: number): Rec
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+export interface YearlyCategoryGroup {
+  categoryId: string;
+  nameEn: string;
+  nameBm: string;
+  receipts: Receipt[];
+  totalClaimable: number;
+}
+
+/**
+ * The same yearly deductible receipts as `yearlyDeductibleReceipts`, but
+ * bucketed by relief category (in the official LHDN category order) —
+ * powers the grouped table and PDF export so a claim can be checked
+ * category by category rather than as one long date-sorted list.
+ */
+export function groupYearlyDeductibleReceiptsByCategory(
+  receipts: Receipt[],
+  year: number
+): YearlyCategoryGroup[] {
+  const yearReceipts = yearlyDeductibleReceipts(receipts, year);
+  const byCategory = new Map<string, Receipt[]>();
+
+  for (const receipt of yearReceipts) {
+    const categoryId = receipt.reliefCategory as string;
+    const existing = byCategory.get(categoryId);
+    if (existing) {
+      existing.push(receipt);
+    } else {
+      byCategory.set(categoryId, [receipt]);
+    }
+  }
+
+  const groups: YearlyCategoryGroup[] = [];
+  for (const category of RELIEF_CATEGORIES) {
+    const categoryReceipts = byCategory.get(category.id);
+    if (!categoryReceipts || categoryReceipts.length === 0) continue;
+    groups.push({
+      categoryId: category.id,
+      nameEn: category.nameEn,
+      nameBm: category.nameBm,
+      receipts: categoryReceipts,
+      totalClaimable: categoryReceipts.reduce((sum, r) => sum + claimableForReceipt(r), 0),
+    });
+  }
+
+  return groups;
+}
+
 export type Period =
   | { type: "month"; year: number; month: number } // month: 1-12
   | { type: "year"; year: number };

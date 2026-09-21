@@ -1,6 +1,10 @@
 import { getExpenseCategory } from "./expenseCategories";
 import { getReliefCategory } from "./reliefCategories";
-import { claimableForReceipt, yearlyDeductibleReceipts } from "./reliefCalc";
+import {
+  claimableForReceipt,
+  groupYearlyDeductibleReceiptsByCategory,
+  yearlyDeductibleReceipts,
+} from "./reliefCalc";
 import { saveOrShareFile } from "./nativeExport";
 import type { Receipt } from "./types";
 
@@ -91,10 +95,15 @@ async function fetchImageAsDataUrl(
   }
 }
 
+function getFinalY(doc: import("jspdf").jsPDF): number {
+  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+}
+
 /**
  * A submission-ready pack for one assessment year: a summary table of every
- * tax-deductible receipt, followed by one appendix page per receipt photo
- * (for handing to LHDN if the claim is ever queried).
+ * tax-deductible receipt grouped by relief category, followed by a compact
+ * appendix (two receipt photos per page, stacked vertically under their own
+ * mini details table) for handing to LHDN if the claim is ever queried.
  */
 export async function downloadYearlyTaxSummaryPdf(
   receipts: Receipt[],
@@ -105,93 +114,143 @@ export async function downloadYearlyTaxSummaryPdf(
   const { autoTable } = await import("jspdf-autotable");
 
   const yearReceipts = yearlyDeductibleReceipts(receipts, year);
+  const groups = groupYearlyDeductibleReceiptsByCategory(receipts, year);
   const totalClaimable = yearReceipts.reduce((sum, r) => sum + claimableForReceipt(r), 0);
+  const margin = 14;
 
   const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
   doc.setFontSize(16);
-  doc.text("Tax Me AI", 14, 18);
+  doc.setTextColor(20);
+  doc.text("Tax Me AI", margin, 18);
   doc.setFontSize(11);
   doc.setTextColor(100);
   doc.text(
     lang === "bm"
       ? `Ringkasan Cukai — Tahun Taksiran ${year}`
       : `Tax Summary — Year of Assessment ${year}`,
-    14,
+    margin,
     26
   );
 
-  autoTable(doc, {
-    startY: 32,
-    head: [
-      [
-        lang === "bm" ? "Tarikh" : "Date",
-        lang === "bm" ? "Peniaga" : "Merchant",
-        lang === "bm" ? "Kategori Pelepasan" : "Relief Category",
-        lang === "bm" ? "Jumlah (RM)" : "Amount (RM)",
-        lang === "bm" ? "Boleh Dituntut (RM)" : "Claimable (RM)",
-        lang === "bm" ? "Resit" : "Receipt",
-      ],
-    ],
-    body: yearReceipts.map((r) => {
-      const relief = r.reliefCategory ? getReliefCategory(r.reliefCategory) : null;
-      return [
+  const columns = [
+    lang === "bm" ? "Tarikh" : "Date",
+    lang === "bm" ? "Peniaga" : "Merchant",
+    lang === "bm" ? "Jumlah (RM)" : "Amount (RM)",
+    lang === "bm" ? "Boleh Dituntut (RM)" : "Claimable (RM)",
+    lang === "bm" ? "Resit" : "Receipt",
+  ];
+
+  let cursorY = 34;
+  for (const group of groups) {
+    if (cursorY > pageHeight - 40) {
+      doc.addPage();
+      cursorY = 20;
+    }
+
+    doc.setFontSize(11);
+    doc.setTextColor(20);
+    doc.text(lang === "bm" ? group.nameBm : group.nameEn, margin, cursorY);
+    cursorY += 4;
+
+    autoTable(doc, {
+      startY: cursorY,
+      margin: { left: margin, right: margin },
+      head: [columns],
+      body: group.receipts.map((r) => [
         r.date,
         r.merchant,
-        relief ? (lang === "bm" ? relief.nameBm : relief.nameEn) : "",
         r.amount.toFixed(2),
         claimableForReceipt(r).toFixed(2),
         r.imageKey ? (lang === "bm" ? "Ada" : "Attached") : (lang === "bm" ? "Tiada" : "None"),
-      ];
-    }),
-    foot: [
-      [
-        "",
-        "",
-        "",
-        "",
-        lang === "bm" ? "Jumlah Boleh Dituntut" : "Total Claimable",
-        `RM ${totalClaimable.toFixed(2)}`,
+      ]),
+      foot: [
+        [
+          "",
+          "",
+          lang === "bm" ? "Jumlah kategori" : "Category total",
+          `RM ${group.totalClaimable.toFixed(2)}`,
+          "",
+        ],
       ],
-    ],
-    theme: "grid",
-    headStyles: { fillColor: [17, 22, 29] },
-    footStyles: { fillColor: [17, 22, 29], fontStyle: "bold" },
-    styles: { fontSize: 8 },
-  });
+      theme: "grid",
+      headStyles: { fillColor: [17, 22, 29] },
+      footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
+      styles: { fontSize: 8 },
+    });
+
+    cursorY = getFinalY(doc) + 10;
+  }
+
+  if (cursorY > pageHeight - 20) {
+    doc.addPage();
+    cursorY = 20;
+  }
+  doc.setFontSize(12);
+  doc.setTextColor(20);
+  doc.setFont("helvetica", "bold");
+  doc.text(
+    `${lang === "bm" ? "Jumlah Boleh Dituntut" : "Total Claimable"}: RM ${totalClaimable.toFixed(2)}`,
+    margin,
+    cursorY
+  );
+  doc.setFont("helvetica", "normal");
 
   const withImages = yearReceipts.filter((r) => r.imageKey);
-  const images = await Promise.all(
-    withImages.map(async (r) => ({ receipt: r, image: await fetchImageAsDataUrl(r.id) }))
-  );
+  const images = (
+    await Promise.all(
+      withImages.map(async (r) => ({ receipt: r, image: await fetchImageAsDataUrl(r.id) }))
+    )
+  ).filter((entry) => entry.image !== null) as {
+    receipt: Receipt;
+    image: { dataUrl: string; width: number; height: number };
+  }[];
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 14;
-  const maxWidth = pageWidth - margin * 2;
-  const maxHeight = pageHeight - 60;
+  const slotGap = 10;
+  const usableHeight = pageHeight - margin * 2 - slotGap;
+  const slotHeight = usableHeight / 2;
+  const slotTops = [margin, margin + slotHeight + slotGap];
+  const availableWidth = pageWidth - margin * 2;
 
-  for (const { receipt, image } of images) {
-    if (!image) continue;
-    doc.addPage();
-    doc.setFontSize(12);
-    doc.setTextColor(20);
-    doc.text(receipt.merchant, margin, 20);
-    doc.setFontSize(10);
-    doc.setTextColor(100);
+  images.forEach(({ receipt, image }, index) => {
+    if (index % 2 === 0) doc.addPage();
+    const slotTop = slotTops[index % 2];
     const relief = receipt.reliefCategory ? getReliefCategory(receipt.reliefCategory) : null;
-    doc.text(
-      `${receipt.date}  ·  RM ${receipt.amount.toFixed(2)}${
-        relief ? `  ·  ${lang === "bm" ? relief.nameBm : relief.nameEn}` : ""
-      }`,
-      margin,
-      27
-    );
 
-    const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+    autoTable(doc, {
+      startY: slotTop,
+      margin: { left: margin, right: margin },
+      head: [
+        [
+          lang === "bm" ? "Tarikh" : "Date",
+          lang === "bm" ? "Peniaga" : "Merchant",
+          lang === "bm" ? "Kategori" : "Category",
+          lang === "bm" ? "Jumlah (RM)" : "Amount (RM)",
+        ],
+      ],
+      body: [
+        [
+          receipt.date,
+          receipt.merchant,
+          relief ? (lang === "bm" ? relief.nameBm : relief.nameEn) : "",
+          receipt.amount.toFixed(2),
+        ],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [17, 22, 29] },
+      styles: { fontSize: 8 },
+    });
+
+    const imageTop = getFinalY(doc) + 4;
+    const availableHeight = slotTop + slotHeight - imageTop - 2;
+    const scale = Math.min(availableWidth / image.width, availableHeight / image.height, 1);
     const drawWidth = image.width * scale;
     const drawHeight = image.height * scale;
-    doc.addImage(image.dataUrl, margin, 34, drawWidth, drawHeight);
-  }
+    const x = margin + (availableWidth - drawWidth) / 2;
+    doc.addImage(image.dataUrl, x, imageTop, drawWidth, drawHeight);
+  });
 
   const blob = doc.output("blob");
   await saveOrShareFile(blob, `tax-me-ai-tax-summary-${year}.pdf`);

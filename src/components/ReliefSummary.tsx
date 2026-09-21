@@ -6,10 +6,11 @@ import {
   claimableForReceipt,
   computeReliefSummary,
   getReliefAlerts,
+  groupYearlyDeductibleReceiptsByCategory,
   yearlyDeductibleReceipts,
   yearsWithReceipts,
 } from "@/lib/reliefCalc";
-import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
+import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
 import { downloadYearlyTaxSummaryPdf } from "@/lib/exportPdf";
 import { downloadYearlyTaxCsv } from "@/lib/exportCsv";
 import ReliefGauge from "./ReliefGauge";
@@ -43,6 +44,7 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
   const rowsWithSpend = summary.rows.filter((r) => r.spent > 0);
   const alerts = getReliefAlerts(summary.rows);
   const yearReceipts = yearlyDeductibleReceipts(receipts, year);
+  const yearGroups = groupYearlyDeductibleReceiptsByCategory(receipts, year);
 
   async function handleExportPdf() {
     setExporting("pdf");
@@ -191,58 +193,65 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
         {yearReceipts.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted">{t("tax.empty")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface-2/60 text-xs text-muted">
-                  <th className="px-3 py-2 font-medium">{t("tax.colDate")}</th>
-                  <th className="px-3 py-2 font-medium">{t("tax.colMerchant")}</th>
-                  <th className="px-3 py-2 font-medium">{t("tax.colCategory")}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t("tax.colAmount")}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t("tax.colClaimable")}</th>
-                  <th className="px-3 py-2 text-center font-medium">{t("tax.colReceipt")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {yearReceipts.map((r) => {
-                  const relief = r.reliefCategory ? getReliefCategory(r.reliefCategory) : null;
-                  return (
-                    <tr key={r.id} className="border-b border-border/60 last:border-0">
-                      <td className="whitespace-nowrap px-3 py-2 text-xs text-muted">{r.date}</td>
-                      <td className="px-3 py-2 font-medium">{r.merchant}</td>
-                      <td className="px-3 py-2 text-xs text-muted">
-                        {relief ? (lang === "bm" ? relief.nameBm : relief.nameEn) : ""}
-                      </td>
-                      <td className="font-mono-tight whitespace-nowrap px-3 py-2 text-right">
-                        {r.amount.toFixed(2)}
-                      </td>
-                      <td className="font-mono-tight whitespace-nowrap px-3 py-2 text-right text-accent">
-                        {claimableForReceipt(r).toFixed(2)}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        {r.imageKey ? (
-                          <button
-                            type="button"
-                            onClick={() => setViewingReceipt(r)}
-                            title={t("tax.viewReceipt")}
-                            className="inline-block h-10 w-10 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={`/api/receipts/${r.id}/image`}
-                              alt={r.merchant}
-                              className="h-full w-full object-cover"
-                            />
-                          </button>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-5">
+            {yearGroups.map((group) => (
+              <div key={group.categoryId}>
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">
+                    {lang === "bm" ? group.nameBm : group.nameEn}
+                  </h4>
+                  <span className="font-mono-tight text-xs text-muted">
+                    RM {group.totalClaimable.toFixed(2)}
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded-xl border border-border">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-surface-2/60 text-xs text-muted">
+                        <th className="px-3 py-2 font-medium">{t("tax.colDate")}</th>
+                        <th className="px-3 py-2 font-medium">{t("tax.colMerchant")}</th>
+                        <th className="px-3 py-2 text-right font-medium">{t("tax.colAmount")}</th>
+                        <th className="px-3 py-2 text-right font-medium">{t("tax.colClaimable")}</th>
+                        <th className="px-3 py-2 text-center font-medium">{t("tax.colReceipt")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.receipts.map((r) => (
+                        <tr key={r.id} className="border-b border-border/60 last:border-0">
+                          <td className="whitespace-nowrap px-3 py-2 text-xs text-muted">{r.date}</td>
+                          <td className="px-3 py-2 font-medium">{r.merchant}</td>
+                          <td className="font-mono-tight whitespace-nowrap px-3 py-2 text-right">
+                            {r.amount.toFixed(2)}
+                          </td>
+                          <td className="font-mono-tight whitespace-nowrap px-3 py-2 text-right text-accent">
+                            {claimableForReceipt(r).toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            {r.imageKey ? (
+                              <button
+                                type="button"
+                                onClick={() => setViewingReceipt(r)}
+                                title={t("tax.viewReceipt")}
+                                className="inline-block h-10 w-10 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={`/api/receipts/${r.id}/image`}
+                                  alt={r.merchant}
+                                  className="h-full w-full object-cover"
+                                />
+                              </button>
+                            ) : (
+                              <span className="text-muted">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
