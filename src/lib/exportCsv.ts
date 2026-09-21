@@ -1,4 +1,4 @@
-import { claimableForReceipt } from "./reliefCalc";
+import { claimableForReceipt, yearlyDeductibleReceipts } from "./reliefCalc";
 import { getReliefCategory } from "./reliefCategories";
 import { getSubcategory } from "./expenseCategories";
 import { saveOrShareFile } from "./nativeExport";
@@ -74,4 +74,30 @@ export async function downloadCsv(receipts: Receipt[], filename = "tax-me-ai-rec
   const csv = receiptsToCsv(receipts);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   await saveOrShareFile(blob, filename);
+}
+
+export function yearlyTaxReceiptsToCsv(receipts: Receipt[], year: number): string {
+  const headers = ["Date", "Merchant", "Relief category", "Amount (RM)", "Claimable (RM)", "Has receipt image"];
+
+  const rows = yearlyDeductibleReceipts(receipts, year).map((r) => {
+    const reliefName = r.reliefCategory ? getReliefCategory(r.reliefCategory).nameEn : "";
+    return [
+      r.date,
+      r.merchant,
+      reliefName,
+      r.amount.toFixed(2),
+      claimableForReceipt(r).toFixed(2),
+      r.imageKey ? "Yes" : "No",
+    ]
+      .map(escapeCsvField)
+      .join(",");
+  });
+
+  return [headers.join(","), ...rows].join("\n");
+}
+
+export async function downloadYearlyTaxCsv(receipts: Receipt[], year: number) {
+  const csv = yearlyTaxReceiptsToCsv(receipts, year);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  await saveOrShareFile(blob, `tax-me-ai-tax-summary-${year}.csv`);
 }

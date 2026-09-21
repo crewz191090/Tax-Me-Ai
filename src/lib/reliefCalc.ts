@@ -102,6 +102,21 @@ export function claimableForReceipt(receipt: Receipt): number {
   return cap > 0 ? receipt.amount : 0;
 }
 
+/**
+ * All tax-deductible receipts for a given assessment year, sorted oldest
+ * first — this is the row-level detail behind the relief summary, used for
+ * the yearly tax table and the LHDN-ready PDF/CSV exports.
+ */
+export function yearlyDeductibleReceipts(receipts: Receipt[], year: number): Receipt[] {
+  return receipts
+    .filter((r) => {
+      if (!r.reliefCategory) return false;
+      if (getReliefCategory(r.reliefCategory).cap <= 0) return false;
+      return Number(r.date.slice(0, 4)) === year;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export type Period =
   | { type: "month"; year: number; month: number } // month: 1-12
   | { type: "year"; year: number };

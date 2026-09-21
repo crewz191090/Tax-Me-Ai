@@ -2,11 +2,20 @@
 
 import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { computeReliefSummary, getReliefAlerts, yearsWithReceipts } from "@/lib/reliefCalc";
-import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
+import {
+  claimableForReceipt,
+  computeReliefSummary,
+  getReliefAlerts,
+  yearlyDeductibleReceipts,
+  yearsWithReceipts,
+} from "@/lib/reliefCalc";
+import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
+import { downloadYearlyTaxSummaryPdf } from "@/lib/exportPdf";
+import { downloadYearlyTaxCsv } from "@/lib/exportCsv";
 import ReliefGauge from "./ReliefGauge";
 import ReliefCategoryDonut from "./ReliefCategoryDonut";
 import TransactionsModal from "./TransactionsModal";
+import ReceiptImageModal from "./ReceiptImageModal";
 import type { Receipt } from "@/lib/types";
 
 const TOTAL_RELIEF_CAP = RELIEF_CATEGORIES.filter((c) => c.cap > 0).reduce(
@@ -18,6 +27,8 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
   const { lang, t } = useLanguage();
   const [year, setYear] = useState(new Date().getFullYear());
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
 
   const availableYears = (() => {
     const years = new Set(yearsWithReceipts(receipts));
@@ -31,6 +42,25 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
   const summary = computeReliefSummary(receipts, year);
   const rowsWithSpend = summary.rows.filter((r) => r.spent > 0);
   const alerts = getReliefAlerts(summary.rows);
+  const yearReceipts = yearlyDeductibleReceipts(receipts, year);
+
+  async function handleExportPdf() {
+    setExporting("pdf");
+    try {
+      await downloadYearlyTaxSummaryPdf(receipts, year, lang);
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handleExportCsv() {
+    setExporting("csv");
+    try {
+      await downloadYearlyTaxCsv(receipts, year);
+    } finally {
+      setExporting(null);
+    }
+  }
 
   return (
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
@@ -125,12 +155,105 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between rounded-xl bg-surface-2 px-4 py-3">
+      <div className="mb-6 flex items-center justify-between rounded-xl bg-surface-2 px-4 py-3">
         <span className="text-sm text-muted">{t("dashboard.totalClaimable")}</span>
         <span className="font-mono-tight text-lg font-bold text-accent">
           RM {summary.totalClaimable.toFixed(2)}
         </span>
       </div>
+
+      <div className="border-t border-border pt-6">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold">{t("tax.yearlySummary")}</h3>
+            <p className="text-xs text-muted">{t("tax.yearlySummarySubtitle")}</p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={exporting !== null || yearReceipts.length === 0}
+              className="btn-pill btn-pill-outline btn-pill-sm disabled:opacity-50"
+            >
+              {exporting === "csv" ? t("tax.exporting") : t("tax.exportCsv")}
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={exporting !== null || yearReceipts.length === 0}
+              className="btn-pill btn-pill-sm disabled:opacity-50"
+            >
+              {exporting === "pdf" ? t("tax.exporting") : t("tax.exportPdf")}
+            </button>
+          </div>
+        </div>
+
+        {yearReceipts.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted">{t("tax.empty")}</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-border bg-surface-2/60 text-xs text-muted">
+                  <th className="px-3 py-2 font-medium">{t("tax.colDate")}</th>
+                  <th className="px-3 py-2 font-medium">{t("tax.colMerchant")}</th>
+                  <th className="px-3 py-2 font-medium">{t("tax.colCategory")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t("tax.colAmount")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t("tax.colClaimable")}</th>
+                  <th className="px-3 py-2 text-center font-medium">{t("tax.colReceipt")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {yearReceipts.map((r) => {
+                  const relief = r.reliefCategory ? getReliefCategory(r.reliefCategory) : null;
+                  return (
+                    <tr key={r.id} className="border-b border-border/60 last:border-0">
+                      <td className="whitespace-nowrap px-3 py-2 text-xs text-muted">{r.date}</td>
+                      <td className="px-3 py-2 font-medium">{r.merchant}</td>
+                      <td className="px-3 py-2 text-xs text-muted">
+                        {relief ? (lang === "bm" ? relief.nameBm : relief.nameEn) : ""}
+                      </td>
+                      <td className="font-mono-tight whitespace-nowrap px-3 py-2 text-right">
+                        {r.amount.toFixed(2)}
+                      </td>
+                      <td className="font-mono-tight whitespace-nowrap px-3 py-2 text-right text-accent">
+                        {claimableForReceipt(r).toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {r.imageKey ? (
+                          <button
+                            type="button"
+                            onClick={() => setViewingReceipt(r)}
+                            title={t("tax.viewReceipt")}
+                            className="inline-block h-10 w-10 overflow-hidden rounded-lg border border-border transition-colors hover:border-accent/50"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={`/api/receipts/${r.id}/image`}
+                              alt={r.merchant}
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {viewingReceipt && (
+        <ReceiptImageModal
+          receiptId={viewingReceipt.id}
+          merchant={viewingReceipt.merchant}
+          onClose={() => setViewingReceipt(null)}
+        />
+      )}
 
       {openCategoryId && (
         <TransactionsModal
