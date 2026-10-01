@@ -8,7 +8,10 @@ import android.service.notification.StatusBarNotification;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -67,6 +70,25 @@ public class BankNotificationListenerService extends NotificationListenerService
         Pattern.CASE_INSENSITIVE
     );
 
+    // Banking apps commonly post a notification once (e.g. "Processing...")
+    // then UPDATE it moments later (e.g. "Transfer successful") — each update
+    // re-fires onNotificationPosted for what is really the same notification,
+    // which would otherwise queue the same transaction twice. sbn.getKey()
+    // stays stable across updates to one notification (it only changes for a
+    // genuinely new one), so it's used to capture each notification once.
+    private static final int MAX_TRACKED_KEYS = 500;
+    private static final Set<String> capturedNotificationKeys = new LinkedHashSet<>();
+
+    private static synchronized boolean alreadyCaptured(String key) {
+        if (!capturedNotificationKeys.add(key)) return true;
+        if (capturedNotificationKeys.size() > MAX_TRACKED_KEYS) {
+            Iterator<String> oldest = capturedNotificationKeys.iterator();
+            oldest.next();
+            oldest.remove();
+        }
+        return false;
+    }
+
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         String bankName = BANK_PACKAGES.get(sbn.getPackageName());
@@ -106,6 +128,8 @@ public class BankNotificationListenerService extends NotificationListenerService
             return;
         }
         if (amount <= 0) return;
+
+        if (alreadyCaptured(sbn.getKey())) return;
 
         // Take the LAST "to"/"from"/... match, not the first — wording like
         // "DuitNow to Acct RM1.00 to NAME" has an earlier false match
