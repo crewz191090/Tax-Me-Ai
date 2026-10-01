@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import UploadReceipt from "@/components/UploadReceipt";
+import UploadReceipt, { type BankTransactionPrefill } from "@/components/UploadReceipt";
+import BankNotificationCapture from "@/components/BankNotificationCapture";
 import CloneExpenses from "@/components/CloneExpenses";
 import ReceiptsTable from "@/components/ReceiptsTable";
 import SummaryBar from "@/components/SummaryBar";
@@ -50,6 +51,7 @@ export default function DashboardPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncErrors, setSyncErrors] = useState<SyncFailure[]>([]);
+  const [bankPrefill, setBankPrefill] = useState<BankTransactionPrefill | null>(null);
 
   const refreshReceipts = useCallback(() => {
     return fetch("/api/receipts")
@@ -163,8 +165,15 @@ export default function DashboardPage() {
             onDiscardFailed={handleDiscardFailed}
           />
 
+          <BankNotificationCapture onReview={setBankPrefill} />
+
           <div className="mb-8">
-            <UploadReceipt onSaved={handleSaved} onQueued={handleQueued} />
+            <UploadReceipt
+              onSaved={handleSaved}
+              onQueued={handleQueued}
+              prefill={bankPrefill}
+              onPrefillHandled={() => setBankPrefill(null)}
+            />
           </div>
 
           {loaded && (

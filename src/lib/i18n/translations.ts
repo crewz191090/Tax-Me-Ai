@@ -84,6 +84,15 @@ export const translations = {
     "tax.empty": "No tax-deductible receipts for this year yet.",
     "tax.viewReceipt": "View receipt",
 
+    "bankCapture.enableTitle": "Auto-capture bank payments",
+    "bankCapture.enableSubtitle":
+      "Let Tax Me AI read payment notifications from your banking apps (Maybank, CIMB, Public Bank, RHB) and turn them into receipts automatically.",
+    "bankCapture.enable": "Enable",
+    "bankCapture.dismiss": "Not now",
+    "bankCapture.detected": "{bank} payment detected — RM{amount}",
+    "bankCapture.review": "Review & save",
+    "bankCapture.discard": "Discard",
+
     "privacy.eyebrow": "Privacy & trust",
     "privacy.title": "Your receipts are yours. Full stop.",
     "privacy.point1.title": "No ad trackers",
@@ -363,6 +372,15 @@ export const translations = {
     "tax.colReceipt": "Resit",
     "tax.empty": "Belum ada resit boleh dilepas cukai bagi tahun ini.",
     "tax.viewReceipt": "Lihat resit",
+
+    "bankCapture.enableTitle": "Tangkap bayaran bank secara automatik",
+    "bankCapture.enableSubtitle":
+      "Benarkan Tax Me AI baca notification pembayaran dari app banking anda (Maybank, CIMB, Public Bank, RHB) dan tukar terus jadi resit secara automatik.",
+    "bankCapture.enable": "Aktifkan",
+    "bankCapture.dismiss": "Lain kali",
+    "bankCapture.detected": "Pembayaran {bank} dikesan — RM{amount}",
+    "bankCapture.review": "Semak & simpan",
+    "bankCapture.discard": "Buang",
 
     "privacy.eyebrow": "Privasi & kepercayaan",
     "privacy.title": "Resit anda milik anda. Titik.",

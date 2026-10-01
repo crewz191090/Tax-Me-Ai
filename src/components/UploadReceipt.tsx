@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -86,12 +86,23 @@ function draftFromExtracted(extracted: ExtractedReceipt): Draft {
   };
 }
 
+export interface BankTransactionPrefill {
+  merchant: string;
+  amount: number;
+  date: string;
+}
+
 export default function UploadReceipt({
   onSaved,
   onQueued,
+  prefill,
+  onPrefillHandled,
 }: {
   onSaved: (receipt: Receipt) => void;
   onQueued?: () => void;
+  /** Opens straight into the review form filled with a bank-detected transaction. */
+  prefill?: BankTransactionPrefill | null;
+  onPrefillHandled?: () => void;
 }) {
   const { lang, t } = useLanguage();
   const online = useOnlineStatus();
@@ -205,6 +216,44 @@ export default function UploadReceipt({
     const selected = e.target.files?.[0];
     if (selected) startManualEntry(selected);
   }
+
+  // "Adjust state when a prop changes" — done during render (not an Effect)
+  // per https://react.dev/learn/you-might-not-need-an-effect, since this is
+  // deriving this component's own state from a changed prop, not
+  // synchronizing with an external system.
+  const [handledPrefill, setHandledPrefill] = useState<BankTransactionPrefill | null>(null);
+  if (prefill && prefill !== handledPrefill) {
+    setHandledPrefill(prefill);
+    setError(null);
+    setFile(null);
+    setPreview(null);
+    setDraft({
+      merchant: prefill.merchant,
+      date: prefill.date,
+      amount: prefill.amount,
+      subcategory: "uncategorized",
+      reliefCategory: null,
+      isEInvoice: false,
+      type: "expense",
+      paymentMethod: "",
+      accountName: "",
+      tags: "",
+      isRecurring: false,
+      location: "",
+      loanTenureMonths: null,
+    });
+    setAmountText(prefill.amount.toFixed(2));
+    setSource("manual");
+    setStatus("review");
+  }
+
+  // Telling the parent its prop was consumed (so it clears `prefill`) is a
+  // side effect on another component, so it happens after commit here
+  // rather than during this component's own render above.
+  useEffect(() => {
+    if (handledPrefill) onPrefillHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handledPrefill]);
 
   async function handleTakePhoto(forManual: boolean) {
     if (Capacitor.isNativePlatform()) {

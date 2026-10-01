@@ -27,6 +27,20 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Reads bank-app payment notifications to auto-capture transactions.
+             The user must grant this explicitly in system settings; it is never
+             enabled by default and the app only acts on notifications from the
+             banking package names it recognizes. -->
+        <service
+            android:name=".BankNotificationListenerService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
     <!-- Permissions -->
