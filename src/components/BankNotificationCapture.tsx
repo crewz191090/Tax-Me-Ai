@@ -73,6 +73,7 @@ export default function BankNotificationCapture({
       merchant: transaction.merchant || transaction.bank,
       amount: transaction.amount,
       date: new Date(transaction.postedAt).toISOString().slice(0, 10),
+      type: transaction.direction === "in" ? "income" : "expense",
     });
     setPending((prev) => prev.filter((p) => p.id !== transaction.id));
     await Plugin.clearPending({ ids: [transaction.id] }).catch(() => {});
@@ -104,7 +105,7 @@ export default function BankNotificationCapture({
         >
           <div className="min-w-0">
             <p className="text-sm font-medium">
-              {t("bankCapture.detected")
+              {t(transaction.direction === "in" ? "bankCapture.detectedIn" : "bankCapture.detectedOut")
                 .replace("{bank}", transaction.bank)
                 .replace("{amount}", transaction.amount.toFixed(2))}
             </p>

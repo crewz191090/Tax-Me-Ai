@@ -89,7 +89,8 @@ export const translations = {
       "Let Tax Me AI read payment notifications from your banking apps (Maybank, CIMB, Public Bank, RHB) and turn them into receipts automatically.",
     "bankCapture.enable": "Enable",
     "bankCapture.dismiss": "Not now",
-    "bankCapture.detected": "{bank} payment detected — RM{amount}",
+    "bankCapture.detectedOut": "{bank} payment detected — RM{amount}",
+    "bankCapture.detectedIn": "{bank} income detected — RM{amount}",
     "bankCapture.review": "Review & save",
     "bankCapture.discard": "Discard",
 
@@ -378,7 +379,8 @@ export const translations = {
       "Benarkan Tax Me AI baca notification pembayaran dari app banking anda (Maybank, CIMB, Public Bank, RHB) dan tukar terus jadi resit secara automatik.",
     "bankCapture.enable": "Aktifkan",
     "bankCapture.dismiss": "Lain kali",
-    "bankCapture.detected": "Pembayaran {bank} dikesan — RM{amount}",
+    "bankCapture.detectedOut": "Pembayaran {bank} dikesan — RM{amount}",
+    "bankCapture.detectedIn": "Pendapatan {bank} dikesan — RM{amount}",
     "bankCapture.review": "Semak & simpan",
     "bankCapture.discard": "Buang",
 

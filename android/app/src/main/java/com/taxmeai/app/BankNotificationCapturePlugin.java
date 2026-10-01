@@ -123,6 +123,7 @@ public class BankNotificationCapturePlugin extends Plugin {
         obj.put("bank", json.optString("bank"));
         obj.put("amount", json.optDouble("amount", 0));
         obj.put("merchant", json.optString("merchant"));
+        obj.put("direction", json.optString("direction", "out"));
         obj.put("rawText", json.optString("rawText"));
         obj.put("postedAt", json.optLong("postedAt"));
         return obj;

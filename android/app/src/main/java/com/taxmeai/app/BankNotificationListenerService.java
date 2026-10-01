@@ -15,11 +15,13 @@ import java.util.regex.Pattern;
 
 /**
  * Watches for notifications from the banking apps in {@link #BANK_PACKAGES}
- * and parses out completed payments ("you spent RM12.34 at ...") so they can
- * be turned into a receipt without the user retyping the amount. Every other
- * notification — from any other app, and non-payment notifications from the
- * banking apps themselves (balance alerts, OTPs, marketing) — is read by the
- * OS but never inspected, stored, or forwarded by this service.
+ * and parses out completed payments/transfers, in either direction ("you
+ * spent RM12.34 at ..." as an expense, "you received RM50.00 from ..." as
+ * income), so they can be turned into an entry without the user retyping the
+ * amount. Every other notification — from any other app, and non-transaction
+ * notifications from the banking apps themselves (balance alerts, OTPs,
+ * marketing) — is read by the OS but never inspected, stored, or forwarded by
+ * this service.
  */
 public class BankNotificationListenerService extends NotificationListenerService {
 
@@ -39,27 +41,24 @@ public class BankNotificationListenerService extends NotificationListenerService
     private static final Pattern AMOUNT_PATTERN =
         Pattern.compile("RM\\s?([0-9][0-9,]*(?:\\.[0-9]{1,2})?)", Pattern.CASE_INSENSITIVE);
 
-    // Best-effort merchant extraction: the word(s) following a preposition
-    // that typically introduces the payee in both English and Bahasa Melayu
-    // bank wording. Deliberately generic rather than bank-specific, since
-    // exact notification wording varies by bank and changes with app updates.
+    // Best-effort merchant/counterparty extraction: the word(s) following a
+    // preposition that typically introduces who the money moved to or from,
+    // in both English and Bahasa Melayu bank wording. Deliberately generic
+    // rather than bank-specific, since exact wording varies by bank and
+    // changes with app updates.
     private static final Pattern MERCHANT_PATTERN = Pattern.compile(
-        "(?:to|at|kepada|di)\\s+([A-Za-z0-9][A-Za-z0-9 &.'/-]{1,40})",
+        "(?:to|at|from|kepada|di|dari)\\s+([A-Za-z0-9][A-Za-z0-9 &.'/-]{1,40})",
         Pattern.CASE_INSENSITIVE
     );
 
-    // Only notifications that look like a completed outgoing payment or
-    // transfer are captured — balance alerts, OTP codes, and marketing
-    // pushes are deliberately left alone.
-    private static final Pattern SPEND_KEYWORDS = Pattern.compile(
+    // A completed outgoing payment or transfer — becomes an expense.
+    private static final Pattern OUTGOING_KEYWORDS = Pattern.compile(
         "debit|paid|payment|purchase|spent|transferred|transfer successful|transaction successful"
             + "|pembayaran|bayaran|pemindahan|berjaya",
         Pattern.CASE_INSENSITIVE
     );
 
-    // Excludes money coming IN even if it happens to also match a word above
-    // (e.g. "transferred" can appear in "RM50 was transferred to your
-    // account") — these are never expenses.
+    // Money coming IN — becomes an income entry instead of an expense.
     private static final Pattern INCOMING_KEYWORDS = Pattern.compile(
         "received|credited|incoming|deposit|refund|diterima|dikreditkan",
         Pattern.CASE_INSENSITIVE
@@ -82,8 +81,18 @@ public class BankNotificationListenerService extends NotificationListenerService
         String body = bigTextSeq != null ? bigTextSeq.toString() : (textSeq != null ? textSeq.toString() : "");
         String fullText = (title + " " + body).trim();
         if (fullText.isEmpty()) return;
-        if (!SPEND_KEYWORDS.matcher(fullText).find()) return;
-        if (INCOMING_KEYWORDS.matcher(fullText).find()) return;
+
+        // Incoming takes priority: bank wording for a received transfer can
+        // still contain an outgoing-flavoured word in the wrong place, but
+        // never the other way round in practice, so check it first.
+        String direction;
+        if (INCOMING_KEYWORDS.matcher(fullText).find()) {
+            direction = "in";
+        } else if (OUTGOING_KEYWORDS.matcher(fullText).find()) {
+            direction = "out";
+        } else {
+            return;
+        }
 
         Matcher amountMatcher = AMOUNT_PATTERN.matcher(fullText);
         if (!amountMatcher.find()) return;
@@ -114,6 +123,7 @@ public class BankNotificationListenerService extends NotificationListenerService
             transaction.put("bank", bankName);
             transaction.put("amount", amount);
             transaction.put("merchant", merchant);
+            transaction.put("direction", direction);
             transaction.put("rawText", fullText);
             transaction.put("postedAt", sbn.getPostTime());
             TransactionNotificationStore.add(getApplicationContext(), transaction);

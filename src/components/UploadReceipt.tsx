@@ -90,6 +90,7 @@ export interface BankTransactionPrefill {
   merchant: string;
   amount: number;
   date: string;
+  type?: TransactionType;
 }
 
 export default function UploadReceipt({
@@ -234,7 +235,7 @@ export default function UploadReceipt({
       subcategory: "uncategorized",
       reliefCategory: null,
       isEInvoice: false,
-      type: "expense",
+      type: prefill.type ?? "expense",
       paymentMethod: "",
       accountName: "",
       tags: "",

@@ -5,6 +5,8 @@ export interface PendingBankTransaction {
   bank: string;
   amount: number;
   merchant: string;
+  /** "out" — money spent/transferred away (an expense). "in" — money received (income). */
+  direction: "in" | "out";
   rawText: string;
   postedAt: number;
 }
