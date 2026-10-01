@@ -51,10 +51,13 @@ public class BankNotificationListenerService extends NotificationListenerService
         Pattern.CASE_INSENSITIVE
     );
 
-    // A completed outgoing payment or transfer — becomes an expense.
+    // A completed outgoing payment or transfer — becomes an expense. Includes
+    // "DuitNow" since several banks (CIMB OCTO observed) label an outgoing
+    // instant transfer with no other outgoing-flavoured word at all, e.g.
+    // "DuitNow to Acct RM1.00 to NAME".
     private static final Pattern OUTGOING_KEYWORDS = Pattern.compile(
         "debit|paid|payment|purchase|spent|transferred|transfer successful|transaction successful"
-            + "|pembayaran|bayaran|pemindahan|berjaya",
+            + "|duitnow|withdrawal|withdrew|pembayaran|bayaran|pemindahan|berjaya",
         Pattern.CASE_INSENSITIVE
     );
 
@@ -104,17 +107,28 @@ public class BankNotificationListenerService extends NotificationListenerService
         }
         if (amount <= 0) return;
 
+        // Take the LAST "to"/"from"/... match, not the first — wording like
+        // "DuitNow to Acct RM1.00 to NAME" has an earlier false match
+        // ("to Acct ...") before the real recipient.
         String merchant = "";
         Matcher merchantMatcher = MERCHANT_PATTERN.matcher(fullText);
-        if (merchantMatcher.find()) {
+        while (merchantMatcher.find()) {
             merchant = merchantMatcher.group(1).trim();
+        }
+        if (!merchant.isEmpty()) {
             // Bank wording often continues past the payee's name into whose
-            // account received it, e.g. "...to Jane Doe's Maybank account" —
-            // cut that off so the merchant field is just the name.
+            // account received it ("...to Jane Doe's Maybank account"), their
+            // bank ("NAME/Maybank"), or the transaction date/time ("NAME on
+            // 01-Oct-2026, 11:00:33") — cut at whichever of those comes first
+            // so the merchant field is just the name.
+            int cut = merchant.length();
             int possessive = merchant.indexOf("'s ");
-            if (possessive > 0) {
-                merchant = merchant.substring(0, possessive).trim();
-            }
+            if (possessive > 0) cut = Math.min(cut, possessive);
+            int onDate = merchant.indexOf(" on ");
+            if (onDate > 0) cut = Math.min(cut, onDate);
+            int slash = merchant.indexOf('/');
+            if (slash > 0) cut = Math.min(cut, slash);
+            merchant = merchant.substring(0, cut).trim();
         }
 
         try {
