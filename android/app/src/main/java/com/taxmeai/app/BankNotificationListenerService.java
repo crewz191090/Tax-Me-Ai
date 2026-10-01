@@ -48,11 +48,20 @@ public class BankNotificationListenerService extends NotificationListenerService
         Pattern.CASE_INSENSITIVE
     );
 
-    // Only notifications that look like a completed outgoing payment are
-    // captured — balance alerts, OTP codes, incoming credits, and marketing
+    // Only notifications that look like a completed outgoing payment or
+    // transfer are captured — balance alerts, OTP codes, and marketing
     // pushes are deliberately left alone.
     private static final Pattern SPEND_KEYWORDS = Pattern.compile(
-        "debit|paid|payment|purchase|spent|transaction successful|pembayaran|bayaran|berjaya",
+        "debit|paid|payment|purchase|spent|transferred|transfer successful|transaction successful"
+            + "|pembayaran|bayaran|pemindahan|berjaya",
+        Pattern.CASE_INSENSITIVE
+    );
+
+    // Excludes money coming IN even if it happens to also match a word above
+    // (e.g. "transferred" can appear in "RM50 was transferred to your
+    // account") — these are never expenses.
+    private static final Pattern INCOMING_KEYWORDS = Pattern.compile(
+        "received|credited|incoming|deposit|refund|diterima|dikreditkan",
         Pattern.CASE_INSENSITIVE
     );
 
@@ -72,7 +81,9 @@ public class BankNotificationListenerService extends NotificationListenerService
         String title = titleSeq == null ? "" : titleSeq.toString();
         String body = bigTextSeq != null ? bigTextSeq.toString() : (textSeq != null ? textSeq.toString() : "");
         String fullText = (title + " " + body).trim();
-        if (fullText.isEmpty() || !SPEND_KEYWORDS.matcher(fullText).find()) return;
+        if (fullText.isEmpty()) return;
+        if (!SPEND_KEYWORDS.matcher(fullText).find()) return;
+        if (INCOMING_KEYWORDS.matcher(fullText).find()) return;
 
         Matcher amountMatcher = AMOUNT_PATTERN.matcher(fullText);
         if (!amountMatcher.find()) return;
@@ -88,6 +99,13 @@ public class BankNotificationListenerService extends NotificationListenerService
         Matcher merchantMatcher = MERCHANT_PATTERN.matcher(fullText);
         if (merchantMatcher.find()) {
             merchant = merchantMatcher.group(1).trim();
+            // Bank wording often continues past the payee's name into whose
+            // account received it, e.g. "...to Jane Doe's Maybank account" —
+            // cut that off so the merchant field is just the name.
+            int possessive = merchant.indexOf("'s ");
+            if (possessive > 0) {
+                merchant = merchant.substring(0, possessive).trim();
+            }
         }
 
         try {
