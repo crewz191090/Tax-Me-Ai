@@ -13,6 +13,7 @@ import {
 import { RELIEF_CATEGORIES } from "@/lib/reliefCategories";
 import { downloadYearlyTaxSummaryPdf } from "@/lib/exportPdf";
 import { downloadYearlyTaxCsv } from "@/lib/exportCsv";
+import { describeExportError } from "@/lib/nativeExport";
 import ReliefGauge from "./ReliefGauge";
 import ReliefCategoryDonut from "./ReliefCategoryDonut";
 import TransactionsModal from "./TransactionsModal";
@@ -30,6 +31,7 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const availableYears = (() => {
     const years = new Set(yearsWithReceipts(receipts));
@@ -46,23 +48,21 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
   const yearReceipts = yearlyDeductibleReceipts(receipts, year);
   const yearGroups = groupYearlyDeductibleReceiptsByCategory(receipts, year);
 
-  async function handleExportPdf() {
-    setExporting("pdf");
+  async function runExport(kind: "pdf" | "csv", doExport: () => Promise<void>) {
+    setExporting(kind);
+    setExportError(null);
     try {
-      await downloadYearlyTaxSummaryPdf(receipts, year, lang);
+      await doExport();
+    } catch (err) {
+      setExportError(describeExportError(err));
     } finally {
       setExporting(null);
     }
   }
 
-  async function handleExportCsv() {
-    setExporting("csv");
-    try {
-      await downloadYearlyTaxCsv(receipts, year);
-    } finally {
-      setExporting(null);
-    }
-  }
+  const handleExportPdf = () =>
+    runExport("pdf", () => downloadYearlyTaxSummaryPdf(receipts, year, lang));
+  const handleExportCsv = () => runExport("csv", () => downloadYearlyTaxCsv(receipts, year));
 
   return (
     <div className="glow-border rounded-xl border border-border bg-surface p-6">
@@ -189,6 +189,12 @@ export default function ReliefSummary({ receipts }: { receipts: Receipt[] }) {
             </button>
           </div>
         </div>
+
+        {exportError && (
+          <p className="mb-4 break-words rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            {t("tax.exportFailed").replace("{error}", exportError)}
+          </p>
+        )}
 
         {yearReceipts.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted">{t("tax.empty")}</p>

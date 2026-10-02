@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import { downloadCsv } from "@/lib/exportCsv";
 import { downloadMonthlyExpensePdf } from "@/lib/exportPdf";
+import { describeExportError } from "@/lib/nativeExport";
 import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import { yearsWithReceipts } from "@/lib/reliefCalc";
 import {
@@ -130,8 +131,18 @@ export default function DashboardPage() {
     return Array.from(years).sort((a, b) => b - a);
   })();
 
+  function reportExportError(err: unknown) {
+    window.alert(`Export failed: ${describeExportError(err)}`);
+  }
+
   function handleExportPdf() {
-    downloadMonthlyExpensePdf(receipts, year, month, monthNames[month - 1], lang);
+    downloadMonthlyExpensePdf(receipts, year, month, monthNames[month - 1], lang).catch(
+      reportExportError
+    );
+  }
+
+  function handleExportCsv() {
+    downloadCsv(receipts).catch(reportExportError);
   }
 
   if (authLoading || !user) {
@@ -236,7 +247,7 @@ export default function DashboardPage() {
                           📄 {t("expenses.exportPdf")}
                         </button>
                         <button
-                          onClick={() => downloadCsv(receipts)}
+                          onClick={handleExportCsv}
                           className="btn-pill btn-pill-outline"
                         >
                           {t("dashboard.export")}

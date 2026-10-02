@@ -83,6 +83,7 @@ export const translations = {
     "tax.colReceipt": "Receipt",
     "tax.empty": "No tax-deductible receipts for this year yet.",
     "tax.viewReceipt": "View receipt",
+    "tax.exportFailed": "Export failed: {error}",
 
     "bankCapture.enableTitle": "Auto-capture bank payments",
     "bankCapture.enableSubtitle":
@@ -373,6 +374,7 @@ export const translations = {
     "tax.colReceipt": "Resit",
     "tax.empty": "Belum ada resit boleh dilepas cukai bagi tahun ini.",
     "tax.viewReceipt": "Lihat resit",
+    "tax.exportFailed": "Eksport gagal: {error}",
 
     "bankCapture.enableTitle": "Tangkap bayaran bank secara automatik",
     "bankCapture.enableSubtitle":
