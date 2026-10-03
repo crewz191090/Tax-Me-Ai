@@ -14,6 +14,7 @@ import { extractReceiptLocally } from "@/lib/localOcr";
 import { addPendingReceipt } from "@/lib/offlineQueue";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import GlassCalculator from "./GlassCalculator";
+import AiStatusBadge from "./AiStatusBadge";
 import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
@@ -498,6 +499,9 @@ export default function UploadReceipt({
               </button>
             </div>
             <p className="max-w-sm text-xs text-muted">{t("upload.manualHint")}</p>
+          </div>
+          <div className="mt-5 flex justify-center">
+            <AiStatusBadge />
           </div>
         </>
       )}

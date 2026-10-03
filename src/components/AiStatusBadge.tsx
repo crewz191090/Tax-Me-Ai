@@ -43,7 +43,7 @@ export default function AiStatusBadge() {
 
   if (effective === "checking") {
     return (
-      <div className="mb-4 flex items-center gap-2 text-xs text-muted">
+      <div className="flex items-center gap-2 text-xs text-muted">
         <span className="h-2 w-2 animate-pulse rounded-full bg-muted" />
         {t("aiStatus.checking")}
       </div>
@@ -52,7 +52,7 @@ export default function AiStatusBadge() {
 
   if (effective === "online") {
     return (
-      <div className="mb-4 flex items-center gap-2 text-xs text-accent">
+      <div className="flex items-center gap-2 text-xs text-accent">
         <span className="h-2 w-2 rounded-full bg-accent" />
         {t("aiStatus.online")}
       </div>
@@ -62,7 +62,7 @@ export default function AiStatusBadge() {
   return (
     <div
       role="status"
-      className="mb-4 flex items-start gap-2 rounded-lg bg-amber-400/10 px-3 py-2 text-xs text-amber-300"
+      className="flex items-start gap-2 rounded-lg bg-amber-400/10 px-3 py-2 text-xs text-amber-300"
     >
       <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-300" />
       <span>{deviceOnline ? t("aiStatus.offline") : t("aiStatus.noInternet")}</span>
