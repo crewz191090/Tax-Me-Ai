@@ -8,6 +8,15 @@ import type { BankTransactionPrefill } from "./UploadReceipt";
 
 const DISMISS_KEY = "bankCaptureEnableDismissed";
 
+// toISOString() is UTC, so a payment made between midnight and 8am in
+// Malaysia (UTC+8) would be filed under the previous day.
+function localDateString(epochMs: number): string {
+  const d = new Date(epochMs);
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
 export default function BankNotificationCapture({
   onReview,
 }: {
@@ -72,7 +81,7 @@ export default function BankNotificationCapture({
     onReview({
       merchant: transaction.merchant || transaction.bank,
       amount: transaction.amount,
-      date: new Date(transaction.postedAt).toISOString().slice(0, 10),
+      date: localDateString(transaction.postedAt),
       type: transaction.direction === "in" ? "income" : "expense",
     });
     setPending((prev) => prev.filter((p) => p.id !== transaction.id));
