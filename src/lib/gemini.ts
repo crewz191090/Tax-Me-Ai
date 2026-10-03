@@ -3,7 +3,7 @@ import { EXPENSE_CATEGORIES, getExpenseCategory } from "./expenseCategories";
 import { RELIEF_CATEGORIES } from "./reliefCategories";
 import type { ExtractedReceipt } from "./types";
 
-const MODEL = "gemini-3.5-flash-lite";
+export const MODEL = "gemini-3.5-flash-lite";
 
 const RELIEF_CATEGORY_IDS = RELIEF_CATEGORIES.map((c) => c.id);
 const MAIN_CATEGORY_IDS = EXPENSE_CATEGORIES.map((c) => c.id);

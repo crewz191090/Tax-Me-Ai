@@ -3,7 +3,7 @@ import { RELIEF_CATEGORIES } from "./reliefCategories";
 import type { ExtractedReceipt } from "./types";
 
 const API_URL = "https://api.deepseek.com/chat/completions";
-const MODEL = "deepseek-flash";
+export const MODEL = "deepseek-flash";
 
 const RELIEF_CATEGORY_IDS = RELIEF_CATEGORIES.map((c) => c.id);
 const MAIN_CATEGORY_IDS = EXPENSE_CATEGORIES.map((c) => c.id);

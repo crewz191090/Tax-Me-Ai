@@ -114,6 +114,7 @@ export default function UploadReceipt({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [amountText, setAmountText] = useState("0.00");
   const [source, setSource] = useState<Source>(null);
+  const [aiFallbackReason, setAiFallbackReason] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
@@ -125,6 +126,7 @@ export default function UploadReceipt({
 
   async function handleFile(selectedFile: File) {
     setError(null);
+    setAiFallbackReason(null);
     setStatus("scanning");
     setFile(selectedFile);
 
@@ -166,8 +168,11 @@ export default function UploadReceipt({
         setSource("ai");
         setStatus("review");
         return;
-      } catch {
-        // fall through to local OCR below
+      } catch (aiErr) {
+        // fall through to local OCR below, remembering why so the review
+        // screen can say AI was unavailable instead of silently downgrading
+        const reason = aiErr instanceof Error ? aiErr.message : String(aiErr);
+        setAiFallbackReason(reason.slice(0, 140));
       }
     }
 
@@ -567,6 +572,12 @@ export default function UploadReceipt({
                 </span>
               )}
             </div>
+
+            {source === "local" && aiFallbackReason && (
+              <p className="break-words rounded-lg bg-amber-400/10 px-3 py-2 text-xs text-amber-300">
+                {t("upload.aiFallbackReason").replace("{reason}", aiFallbackReason)}
+              </p>
+            )}
 
             <label className="text-xs text-muted">
               {t("upload.merchant")}

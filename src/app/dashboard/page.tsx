@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import UploadReceipt, { type BankTransactionPrefill } from "@/components/UploadReceipt";
 import BankNotificationCapture from "@/components/BankNotificationCapture";
+import AiStatusBadge from "@/components/AiStatusBadge";
 import CloneExpenses from "@/components/CloneExpenses";
 import ReceiptsTable from "@/components/ReceiptsTable";
 import SummaryBar from "@/components/SummaryBar";
@@ -175,6 +176,8 @@ export default function DashboardPage() {
             onSyncNow={runSync}
             onDiscardFailed={handleDiscardFailed}
           />
+
+          <AiStatusBadge />
 
           <BankNotificationCapture onReview={setBankPrefill} />
 

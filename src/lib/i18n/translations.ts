@@ -85,6 +85,14 @@ export const translations = {
     "tax.viewReceipt": "View receipt",
     "tax.exportFailed": "Export failed: {error}",
 
+    "aiStatus.checking": "Checking AI scan status…",
+    "aiStatus.online": "AI scan online",
+    "aiStatus.offline":
+      "AI scan is offline right now — receipts will be read with local OCR, which is less accurate. Please check the details before saving.",
+    "aiStatus.noInternet":
+      "No internet connection — receipts will be read with local OCR, which is less accurate.",
+    "upload.aiFallbackReason": "AI was unavailable ({reason}) — this receipt was read with local OCR.",
+
     "bankCapture.enableTitle": "Auto-capture bank payments",
     "bankCapture.enableSubtitle":
       "Let Tax Me AI read payment notifications from your banking apps (Maybank, CIMB, Public Bank, RHB) and turn them into receipts automatically.",
@@ -375,6 +383,14 @@ export const translations = {
     "tax.empty": "Belum ada resit boleh dilepas cukai bagi tahun ini.",
     "tax.viewReceipt": "Lihat resit",
     "tax.exportFailed": "Eksport gagal: {error}",
+
+    "aiStatus.checking": "Menyemak status imbasan AI…",
+    "aiStatus.online": "Imbasan AI dalam talian",
+    "aiStatus.offline":
+      "Imbasan AI luar talian buat masa ini — resit akan dibaca dengan OCR tempatan yang kurang tepat. Sila semak butiran sebelum menyimpan.",
+    "aiStatus.noInternet":
+      "Tiada sambungan internet — resit akan dibaca dengan OCR tempatan yang kurang tepat.",
+    "upload.aiFallbackReason": "AI tidak tersedia ({reason}) — resit ini dibaca dengan OCR tempatan.",
 
     "bankCapture.enableTitle": "Tangkap bayaran bank secara automatik",
     "bankCapture.enableSubtitle":
