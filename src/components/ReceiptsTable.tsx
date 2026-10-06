@@ -6,6 +6,7 @@ import { EXPENSE_CATEGORIES, getSubcategory } from "@/lib/expenseCategories";
 import { getReliefCategory } from "@/lib/reliefCategories";
 import { MONTHS_BM, MONTHS_EN } from "@/lib/months";
 import ReceiptImageModal from "./ReceiptImageModal";
+import EditReceiptModal, { type ReceiptPatch } from "./EditReceiptModal";
 import type { Receipt } from "@/lib/types";
 
 const TYPE_BADGE: Record<string, string> = {
@@ -31,6 +32,7 @@ export default function ReceiptsTable({
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
+  const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null);
   const [page, setPage] = useState(1);
 
   const monthNames = lang === "bm" ? MONTHS_BM : MONTHS_EN;
@@ -88,6 +90,28 @@ export default function ReceiptsTable({
     const mainCategory = getSubcategory(subcategory)?.category.id ?? "other";
     onChange(
       receipts.map((r) => (r.id === id ? { ...r, subcategory, mainCategory } : r))
+    );
+  }
+
+  async function handleEditSave(id: string, patch: ReceiptPatch) {
+    const res = await fetch(`/api/receipts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) {
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(json.error || `HTTP ${res.status}`);
+    }
+    onChange(
+      receipts.map((r) => {
+        if (r.id !== id) return r;
+        const next = { ...r, ...patch };
+        if (patch.subcategory) {
+          next.mainCategory = getSubcategory(patch.subcategory)?.category.id ?? "other";
+        }
+        return next;
+      })
     );
   }
 
@@ -286,6 +310,12 @@ export default function ReceiptsTable({
                         </>
                       )}
                       <button
+                        onClick={() => setEditingReceipt(r)}
+                        className="btn-pill btn-pill-outline btn-pill-sm"
+                      >
+                        {t("table.edit")}
+                      </button>
+                      <button
                         onClick={() => handleDelete(r.id)}
                         disabled={pendingId === r.id}
                         className="btn-pill btn-pill-danger btn-pill-sm"
@@ -330,6 +360,13 @@ export default function ReceiptsTable({
           receiptId={viewingReceipt.id}
           merchant={viewingReceipt.merchant}
           onClose={() => setViewingReceipt(null)}
+        />
+      )}
+      {editingReceipt && (
+        <EditReceiptModal
+          receipt={editingReceipt}
+          onSave={(patch) => handleEditSave(editingReceipt.id, patch)}
+          onClose={() => setEditingReceipt(null)}
         />
       )}
     </>

@@ -6,6 +6,7 @@ import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import {
   EXPENSE_CATEGORIES,
+  LOAN_TENURE_OPTIONS,
   PAYMENT_METHODS,
   type TransactionType,
 } from "@/lib/expenseCategories";
@@ -19,8 +20,6 @@ import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
 type Source = "ai" | "local" | "manual" | null;
-
-const LOAN_TENURE_OPTIONS = [1, 3, 6, 12, 24, 36];
 
 interface Draft {
   merchant: string;

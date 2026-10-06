@@ -284,6 +284,8 @@ export const ALL_SUBCATEGORY_IDS = EXPENSE_CATEGORIES.flatMap((c) =>
 
 export type TransactionType = "expense" | "income" | "transfer";
 
+export const LOAN_TENURE_OPTIONS = [1, 3, 6, 12, 24, 36];
+
 export const PAYMENT_METHODS = [
   { id: "cash", nameEn: "Cash", nameBm: "Tunai" },
   { id: "debit_card", nameEn: "Debit Card", nameBm: "Kad Debit" },

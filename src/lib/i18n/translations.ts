@@ -85,6 +85,10 @@ export const translations = {
     "tax.viewReceipt": "View receipt",
     "tax.exportFailed": "Export failed: {error}",
 
+    "table.edit": "Edit",
+    "edit.title": "Edit transaction",
+    "edit.saveFailed": "Could not save changes: {error}",
+
     "aiStatus.checking": "Checking AI scan status…",
     "aiStatus.online": "AI scan online",
     "aiStatus.offline":
@@ -383,6 +387,10 @@ export const translations = {
     "tax.empty": "Belum ada resit boleh dilepas cukai bagi tahun ini.",
     "tax.viewReceipt": "Lihat resit",
     "tax.exportFailed": "Eksport gagal: {error}",
+
+    "table.edit": "Edit",
+    "edit.title": "Edit transaksi",
+    "edit.saveFailed": "Tidak dapat menyimpan perubahan: {error}",
 
     "aiStatus.checking": "Menyemak status imbasan AI…",
     "aiStatus.online": "Imbasan AI dalam talian",

@@ -42,6 +42,19 @@ export async function PATCH(
       loanMonthIndex?: number | null;
     };
 
+    if (typeof body.merchant === "string" && !body.merchant.trim()) {
+      return NextResponse.json({ error: "Merchant cannot be empty." }, { status: 400 });
+    }
+    if (typeof body.date === "string" && !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+      return NextResponse.json({ error: "Invalid date." }, { status: 400 });
+    }
+    if (
+      body.amount !== undefined &&
+      (typeof body.amount !== "number" || !Number.isFinite(body.amount) || body.amount <= 0)
+    ) {
+      return NextResponse.json({ error: "Amount must be greater than 0." }, { status: 400 });
+    }
+
     const updates: Partial<
       Pick<
         Receipt,
@@ -62,7 +75,7 @@ export async function PATCH(
         | "loanMonthIndex"
       >
     > = {};
-    if (typeof body.merchant === "string") updates.merchant = body.merchant;
+    if (typeof body.merchant === "string") updates.merchant = body.merchant.trim();
     if (typeof body.date === "string") updates.date = body.date;
     if (typeof body.amount === "number") updates.amount = body.amount;
     if (typeof body.subcategory === "string" && ALL_SUBCATEGORY_IDS.includes(body.subcategory)) {
