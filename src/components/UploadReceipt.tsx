@@ -12,11 +12,12 @@ import {
 } from "@/lib/expenseCategories";
 import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
 import { extractReceiptLocally } from "@/lib/localOcr";
-import { cropReceiptFromImage } from "@/lib/receiptCrop";
+import { autoCropReceipt, cropToQuad, defaultQuad, type Quad } from "@/lib/receiptCrop";
 import { addPendingReceipt } from "@/lib/offlineQueue";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import GlassCalculator from "./GlassCalculator";
 import AiStatusBadge from "./AiStatusBadge";
+import CropEditor from "./CropEditor";
 import type { ExtractedReceipt, Receipt } from "@/lib/types";
 
 type Status = "idle" | "scanning" | "review" | "saving" | "error";
@@ -112,6 +113,13 @@ export default function UploadReceipt({
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  // The untouched photo, kept so the crop can be re-done or undone later.
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [originalPreview, setOriginalPreview] = useState<string | null>(null);
+  const [detectedQuad, setDetectedQuad] = useState<Quad | null>(null);
+  // Outline currently applied (auto-detected or hand-drawn); null = full photo.
+  const [appliedQuad, setAppliedQuad] = useState<Quad | null>(null);
+  const [showCropEditor, setShowCropEditor] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [amountText, setAmountText] = useState("0.00");
   const [source, setSource] = useState<Source>(null);
@@ -125,22 +133,53 @@ export default function UploadReceipt({
   const manualCameraInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  async function handleFile(originalFile: File) {
+  async function handleFile(original: File) {
     setError(null);
     setAiFallbackReason(null);
     setStatus("scanning");
-    setFile(originalFile);
+    setOriginalFile(original);
+    setDetectedQuad(null);
+    setAppliedQuad(null);
+    setFile(original);
 
-    // Show the raw photo straight away, then swap in the straightened,
-    // background-free crop once detection finishes — everything downstream
-    // (AI scan, local OCR, the saved image) works from the cropped copy.
-    setPreview(await fileToDataUrl(originalFile));
+    // Show the raw photo straight away, then scan the straightened,
+    // background-free crop as soon as detection finishes.
+    const originalUrl = await fileToDataUrl(original);
+    setOriginalPreview(originalUrl);
+    setPreview(originalUrl);
 
-    const selectedFile = await cropReceiptFromImage(originalFile);
-    if (selectedFile !== originalFile) {
-      setFile(selectedFile);
-      setPreview(await fileToDataUrl(selectedFile));
+    const { file: cropped, quad } = await autoCropReceipt(original);
+    setDetectedQuad(quad);
+    setAppliedQuad(quad);
+    await runScan(cropped);
+  }
+
+  async function applyManualCrop(quad: Quad) {
+    setShowCropEditor(false);
+    if (!originalFile) return;
+    const cropped = await cropToQuad(originalFile, quad);
+    if (!cropped) {
+      setAppliedQuad(null);
+      await runScan(originalFile);
+      return;
     }
+    setAppliedQuad(quad);
+    await runScan(cropped);
+  }
+
+  async function useOriginalPhoto() {
+    setShowCropEditor(false);
+    if (!originalFile) return;
+    setAppliedQuad(null);
+    await runScan(originalFile);
+  }
+
+  async function runScan(selectedFile: File) {
+    setError(null);
+    setAiFallbackReason(null);
+    setStatus("scanning");
+    setFile(selectedFile);
+    setPreview(await fileToDataUrl(selectedFile));
 
     // Load-balance: try the AI scan only if we appear to be online; if the
     // AI call fails for any reason (quota, network blip, server error),
@@ -205,6 +244,7 @@ export default function UploadReceipt({
 
   async function startManualEntry(selectedFile: File | null) {
     setError(null);
+    setOriginalFile(null);
     setFile(selectedFile);
     setPreview(selectedFile ? await fileToDataUrl(selectedFile) : null);
     setDraft({
@@ -240,6 +280,7 @@ export default function UploadReceipt({
   if (prefill && prefill !== handledPrefill) {
     setHandledPrefill(prefill);
     setError(null);
+    setOriginalFile(null);
     setFile(null);
     setPreview(null);
     setDraft({
@@ -397,6 +438,11 @@ export default function UploadReceipt({
     setError(null);
     setPreview(null);
     setFile(null);
+    setOriginalFile(null);
+    setOriginalPreview(null);
+    setDetectedQuad(null);
+    setAppliedQuad(null);
+    setShowCropEditor(false);
     setDraft(null);
     setAmountText("0.00");
     setSource(null);
@@ -549,11 +595,28 @@ export default function UploadReceipt({
       {(status === "review" || status === "saving") && draft && (
         <div className="grid gap-6 md:grid-cols-2">
           {preview ? (
-            <img
-              src={preview}
-              alt="Receipt preview"
-              className="max-h-72 w-full rounded-lg border border-border object-contain"
-            />
+            <div className="flex flex-col gap-2">
+              <img
+                src={preview}
+                alt="Receipt preview"
+                className="max-h-72 w-full rounded-lg border border-border object-contain"
+              />
+              {originalFile && (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] text-muted">
+                    {appliedQuad ? t("crop.cropped") : t("crop.fullPhoto")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCropEditor(true)}
+                    disabled={status === "saving"}
+                    className="btn-pill btn-pill-outline btn-pill-sm"
+                  >
+                    ✂️ {t("crop.adjust")}
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="flex max-h-72 min-h-[220px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-surface-2 text-muted">
               <span className="text-4xl">🖼️</span>
@@ -844,6 +907,17 @@ export default function UploadReceipt({
             </div>
           </div>
         </div>
+      )}
+
+      {showCropEditor && originalPreview && originalFile && (
+        <CropEditor
+          imageSrc={originalPreview}
+          initialQuad={appliedQuad ?? defaultQuad()}
+          resetQuad={detectedQuad ?? defaultQuad()}
+          onApply={applyManualCrop}
+          onUseOriginal={useOriginalPhoto}
+          onCancel={() => setShowCropEditor(false)}
+        />
       )}
     </div>
   );
