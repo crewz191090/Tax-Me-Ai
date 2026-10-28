@@ -12,6 +12,7 @@ import {
 } from "@/lib/expenseCategories";
 import { RELIEF_CATEGORIES, getReliefCategory } from "@/lib/reliefCategories";
 import { extractReceiptLocally } from "@/lib/localOcr";
+import { cropReceiptFromImage } from "@/lib/receiptCrop";
 import { addPendingReceipt } from "@/lib/offlineQueue";
 import { useOnlineStatus } from "@/lib/useOnlineStatus";
 import GlassCalculator from "./GlassCalculator";
@@ -124,14 +125,22 @@ export default function UploadReceipt({
   const manualCameraInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  async function handleFile(selectedFile: File) {
+  async function handleFile(originalFile: File) {
     setError(null);
     setAiFallbackReason(null);
     setStatus("scanning");
-    setFile(selectedFile);
+    setFile(originalFile);
 
-    const dataUrl = await fileToDataUrl(selectedFile);
-    setPreview(dataUrl);
+    // Show the raw photo straight away, then swap in the straightened,
+    // background-free crop once detection finishes — everything downstream
+    // (AI scan, local OCR, the saved image) works from the cropped copy.
+    setPreview(await fileToDataUrl(originalFile));
+
+    const selectedFile = await cropReceiptFromImage(originalFile);
+    if (selectedFile !== originalFile) {
+      setFile(selectedFile);
+      setPreview(await fileToDataUrl(selectedFile));
+    }
 
     // Load-balance: try the AI scan only if we appear to be online; if the
     // AI call fails for any reason (quota, network blip, server error),
